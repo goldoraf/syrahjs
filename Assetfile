@@ -1,0 +1,33 @@
+require "rake-pipeline-web-filters"
+require "uglifier"
+require "json"
+
+output "dist"
+
+input "src" do
+  match "main.js" do
+    neuter(
+      "ember-storage.js",
+      :additional_dependencies => proc { |input|
+        Dir.glob(File.join(File.dirname(input.fullpath),'**','*.js'))
+      },
+      :path_transform => proc { |path, input|
+        "#{path}.js"
+      },
+      :closure_wrap => true
+    ) 
+  end
+end
+
+input "tests/src" do
+  match "**/*.js" do
+    concat "ember-storage-tests.js"
+  end
+end
+
+input "dist" do
+  match "ember-storage.js" do
+    uglify { "ember-storage.min.js" }
+  end
+end
+
