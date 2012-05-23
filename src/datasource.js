@@ -6,7 +6,7 @@ Syrah.DataSource = Ember.Object.extend({
 	add: null,
 	
 	getCollectionName: function(store, type) {
-		return store.getCollectionName(type);
+		return Syrah.Inflector.getCollectionName(type);
 	}
 	
 });

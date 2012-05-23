@@ -1,6 +1,7 @@
 Syrah.Store = Ember.Object.extend({
 	
 	ds: null,
+	marshaller: Syrah.JSONMarshaller.create(),
 	
 	init: function() {
 		
@@ -42,17 +43,14 @@ Syrah.Store = Ember.Object.extend({
 	loadMany: function(type, collection, data) {
 		var objects = [];
 		data.forEach(function(hash) {
-			objects.push(type.create(hash));
-		});
+			objects.push(this.load(type.create(), hash));
+		}, this);
 		collection.pushObjects(objects);
 		return collection;
 	},
 	
-	load: function(object, hash) {
-		object.beginPropertyChanges();
-		object.setProperties(hash);
-		object.endPropertyChanges();
-		return object;
+	load: function(object, json) {
+		return this.get('marshaller').unmarshall(json, object);
 	},
 	
 	didAddObject: function(object, id, hash) {
@@ -77,33 +75,6 @@ Syrah.Store = Ember.Object.extend({
 	},
 	
 	toJSON: function(object) {
-		var v, attrs = [];
-        for (var prop in object) {
-            if (object.hasOwnProperty(prop)) {
-                v = this[prop];
-                if (v === 'toString') {
-                    continue;
-                }
-                if (Ember.typeOf(v) === 'function') {
-                    continue;
-                }
-                attrs.push(prop);
-            }
-        }
-        return object.getProperties(attrs);
-	},
-	
-	getCollectionName: function(type) {
-		return this.pluralize(this.getTypeName(type));
-	},
-	
-	getTypeName: function(type) {
-		var parts = type.toString().split(".");
-	    var name = parts[parts.length - 1];
-	    return name.replace(/([A-Z])/g, '_$1').toLowerCase().slice(1);
-	},
-	
-	pluralize: function(singular) {
-		return singular + 's';
+		return this.get('marshaller').marshall(object);
 	}
 });

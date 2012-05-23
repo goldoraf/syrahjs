@@ -9,19 +9,6 @@ module('Store tests', {
 	}
 });
 
-
-test("Store has a getTypeName() method to get a type's name in underscored lowercase", function() {
-	var store = Syrah.Store.create();
-	
-	equal(store.getTypeName(Foo.BarTest), 'bar_test');
-});
-
-test("Store has a getCollectionName() method to get a pluralized type's name", function() {
-	var store = Syrah.Store.create();
-	
-	equal(store.getCollectionName(Foo.BarTest), 'bar_tests');
-});
-
 test("Store has a load() method to load in attributes in an object", function() {
 	var store = Syrah.Store.create();
 	var contact = Foo.Contact.create();
@@ -78,7 +65,7 @@ test("Calling Store.all() should invoke his datasource's all() and return an arr
 	
 	var currentStore = Syrah.Store.create({ ds: ds });
 	var returnedCollection = currentStore.all(Foo.Contact);
-	console.log(returnedCollection);
+	
 	ok(returnedCollection instanceof Array, "Store.all() returned an array");
 });
 
