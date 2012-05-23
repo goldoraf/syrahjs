@@ -1,4 +1,4 @@
-Inativ.RESTApiDataSource = Inativ.DataSource.extend({
+Syrah.RESTApiDataSource = Syrah.DataSource.extend({
 	
 	all: function(collection, callback, store) {
 		this.ajax(this.buildUrl(store, collection), 'GET', {
@@ -21,6 +21,25 @@ Inativ.RESTApiDataSource = Inativ.DataSource.extend({
 			data: store.toJSON(object),
 			success: function(json) {
 				callback.call(store, object, null, json);
+			}
+		});
+	},
+	
+	update: function(object, callback, store) {
+		var id = object.get('id');
+		this.ajax(this.buildUrl(store, object) + '/' + id, 'PUT', {
+			data: store.toJSON(object),
+			success: function(json) {
+				callback.call(store, object, json);
+			}
+		});
+	},
+	
+	destroy: function(object, callback, store) {
+		var id = object.get('id');
+		this.ajax(this.buildUrl(store, object) + '/' + id, 'DELETE', {
+			success: function(json) {
+				callback.call(store, object);
 			}
 		});
 	},

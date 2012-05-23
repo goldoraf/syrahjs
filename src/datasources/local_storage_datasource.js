@@ -8,26 +8,10 @@ function guid() {
    return (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4());
 };
 
-Inativ.LocalStorageDataSource = Inativ.DataSource.extend({
+Syrah.LocalStorageDataSource = Syrah.DataSource.extend({
 	
 	name: null,
 	storage: localStorage,
-	collectionsKeys: {},
-	
-	init: function() {
-		this._super();
-		var store = this.get('storage').getItem(this.get('name'));
-		
-	},
-	
-	keys: function(collectionName) {
-		var collKeys = this.get('collectionsKeys');
-		if (!collKeys.hasOwnProperty(collectionName)) {
-			var keys = this.get('storage').getItem(this.get('name') + ':' + collectionName).split(',');
-			collKeys[collectionName] = keys;
-		}
-		return collKeys[collectionName];
-	},
 	
 	all: function(collection, callback, store) {
 		var collectionName = this.getCollectionName(store, collection);
@@ -61,11 +45,43 @@ Inativ.LocalStorageDataSource = Inativ.DataSource.extend({
 		var keys = this.keys(collectionName);
 		var objectKey = guid();
 		keys.push(objectKey);
-		this.get('storage').setItem(this.get('name') + ':' + collectionName, keys.join(','));
+		this.persistKeys(collectionName, keys);
 		
 		var data = store.toJSON(object);
-		this.get('storage').setItem(this.get('name') + ':' + collectionName + ':' + objectKey, JSON.stringify(data));
+		this.persistObject(collectionName, objectKey, data);
 		callback.call(store, object, objectKey, data);
+	},
+	
+	update: function(object, callback, store) {
+		var collectionName = this.getCollectionName(store, object);
+		var objectKey = object.get('id');
+		// TODO : check key existence ?
+		var data = store.toJSON(object);
+		this.persistObject(collectionName, objectKey, data);
+		callback.call(store, object, data);
+	},
+	
+	destroy: function(object, callback, store) {
+		var collectionName = this.getCollectionName(store, object);
+		var keys = this.keys(collectionName);
+		var objectKey = object.get('id');
+		keys.removeAt(keys.indexOf(objectKey));
+		this.persistKeys(collectionName, keys);
+		
+		this.get('storage').removeItem(this.get('name') + ':' + collectionName + ':' + objectKey);
+		callback.call(store, object);
+	},
+	
+	persistObject: function(collectionName, objectKey, data) {
+		this.get('storage').setItem(this.get('name') + ':' + collectionName + ':' + objectKey, JSON.stringify(data));
+	},
+	
+	keys: function(collectionName) {
+		return this.get('storage').getItem(this.get('name') + ':' + collectionName).split(',');
+	},
+	
+	persistKeys: function(collectionName, keys) {
+		this.get('storage').setItem(this.get('name') + ':' + collectionName, keys.join(','));
 	}
 	
 });

@@ -1,13 +1,11 @@
 module('LocalStorageDataSource test', {
 	setup: function() {
-		for (k in localStorage) {
-			localStorage.removeItem(k);
-		}
+		localStorage.clear();
 		localStorage.setItem('test:contacts:12345', JSON.stringify({ firstname: 'John', lastname: 'Doe' }));
 		localStorage.setItem('test:contacts:67890', JSON.stringify({ firstname: 'Jane', lastname: 'Doe' }));
 		localStorage.setItem('test:contacts', '12345,67890');
 		
-		ds = Inativ.LocalStorageDataSource.create({ name: 'test' });
+		ds = Syrah.LocalStorageDataSource.create({ name: 'test' });
 		
 		window.Foo = Ember.Namespace.create();
 		Foo.Contact = Ember.Object.extend({
@@ -22,7 +20,7 @@ test("LocalStorage DS has a fetch() method to retrieve an object by key and coll
 });
 
 test("LocalStorage DS can be used to retrieve an object", function() {
-	var store = Inativ.Store.create({ds:ds});
+	var store = Syrah.Store.create({ds:ds});
 	var object = store.findById(Foo.Contact, '12345');
 	
 	equal(object.get('firstname'), 'John');
@@ -37,7 +35,7 @@ test("LocalStorage DS has a fetchMany() method to retrieve objects by keys and c
 });
 
 test("LocalStorage DS can be used to retrieve an entire collection", function() {
-	var store = Inativ.Store.create({ds:ds});
+	var store = Syrah.Store.create({ds:ds});
 	var collection = store.all(Foo.Contact);
 	
 	//equal(collection.length, 2);
@@ -47,7 +45,7 @@ test("LocalStorage DS can be used to retrieve an entire collection", function() 
 
 test("LocalStorage DS can persist an object", function() {
 	var obi = Foo.Contact.create({ firstname: 'Obi-Wan', lastname: 'Kenobi' });
-	var store = Inativ.Store.create({
+	var store = Syrah.Store.create({
 		ds:ds,
 		didAddObject: function(object, id) {
 			equal(localStorage.getItem('test:contacts'), '12345,67890,'+id);
@@ -56,4 +54,30 @@ test("LocalStorage DS can persist an object", function() {
 	});
 	
 	store.add(obi);
+});
+
+test("LocalStorage DS can update an object", function() {
+	var obi = Foo.Contact.create({ id: '12345', firstname: 'Obi-Wan', lastname: 'Kenobi' });
+	var store = Syrah.Store.create({
+		ds:ds,
+		didUpdateObject: function(object) {
+			equal(localStorage.getItem('test:contacts'), '12345,67890');
+			equal(localStorage.getItem('test:contacts:12345'), JSON.stringify({ id: '12345', firstname: 'Obi-Wan', lastname: 'Kenobi' }));
+		}
+	});
+	
+	store.update(obi);
+});
+
+test("LocalStorage DS can destroy an object", function() {
+	var obi = Foo.Contact.create({ id: '12345', firstname: 'Obi-Wan', lastname: 'Kenobi' });
+	var store = Syrah.Store.create({
+		ds:ds,
+		didDestroyObject: function(object) {
+			equal(localStorage.getItem('test:contacts'), '67890');
+			equal(localStorage.getItem('test:contacts:12345'), null);
+		}
+	});
+	
+	store.destroy(obi);
 });

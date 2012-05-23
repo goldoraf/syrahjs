@@ -9,9 +9,9 @@ def pipeline
   Rake::Pipeline::Project.new("Assetfile")
 end
 
-desc "Build ember-storage.js"
+desc "Build syrah.js"
 task :dist do
-  puts "Building Ember Storage..."
+  puts "Building Syrah..."
   pipeline.invoke
   puts "Done"
 end

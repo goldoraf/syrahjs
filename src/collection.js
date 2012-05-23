@@ -1,4 +1,4 @@
-Inativ.Collection = Ember.ArrayProxy.extend({
+Syrah.Collection = Ember.ArrayProxy.extend({
 	
 	type: Ember.Object,
 	content: null,

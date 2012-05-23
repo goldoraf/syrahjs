@@ -1,4 +1,4 @@
-Inativ.Model = Ember.Object.extend({
+Syrah.Model = Ember.Object.extend({
 	
 	primaryKey: 'id',
 	id: Ember.computed(function(key, value) {

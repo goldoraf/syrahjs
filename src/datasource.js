@@ -1,4 +1,4 @@
-Inativ.DataSource = Ember.Object.extend({
+Syrah.DataSource = Ember.Object.extend({
 	
 	all: null,
 	find: null,
@@ -6,7 +6,7 @@ Inativ.DataSource = Ember.Object.extend({
 	add: null,
 	
 	getCollectionName: function(store, object) {
-		if (object instanceof Inativ.Collection) {
+		if (object instanceof Syrah.Collection) {
 			type = object.get('type');
 		} else {
 			type = object.constructor;

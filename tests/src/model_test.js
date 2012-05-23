@@ -1,7 +1,7 @@
 module('Model test', {
 	setup: function() {
 		window.Foo = Ember.Namespace.create();
-		Foo.Contact = Inativ.Model.extend({
+		Foo.Contact = Syrah.Model.extend({
 			primaryKey: 'CID',
 			firstname: null,
 			lastname: null,

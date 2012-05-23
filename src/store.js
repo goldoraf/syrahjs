@@ -1,4 +1,4 @@
-Inativ.Store = Ember.Object.extend({
+Syrah.Store = Ember.Object.extend({
 	
 	ds: null,
 	
@@ -14,6 +14,11 @@ Inativ.Store = Ember.Object.extend({
 	update: function(object) {
 		this.get('ds').update(object, this.didUpdateObject, this);
 		return object;
+	},
+	
+	destroy: function(object) {
+		this.get('ds').destroy(object, this.didDestroyObject, this);
+		return;
 	},
 	
 	find: function(type, query) {
@@ -52,12 +57,24 @@ Inativ.Store = Ember.Object.extend({
 	},
 	
 	didAddObject: function(object, id, hash) {
+		// If the DS has not provided an ID, it must be provided in the returned hash
+		if (id === null) {
+			var pk = (object.get('primaryKey') !== undefined) ? object.get('primaryKey') : 'id';
+			if (hash[pk] === undefined) {
+				throw "The DataSource has not provided an ID for the newly created object";
+			}
+			id = hash[pk];
+		}
 		object.set('id', id);
 		return object;
 	},
 	
 	didUpdateObject: function(object, hash) {
 		
+	},
+	
+	didDestroyObject: function(object) {
+		object.destroy();
 	},
 	
 	toJSON: function(object) {
@@ -78,7 +95,7 @@ Inativ.Store = Ember.Object.extend({
 	},
 	
 	createCollection: function(type) {
-		return Inativ.Collection.create({ 
+		return Syrah.Collection.create({ 
 			type: type, 
 			content: Ember.A([]), 
 			store: this
