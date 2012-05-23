@@ -1,15 +1,15 @@
 Syrah.RESTApiDataSource = Syrah.DataSource.extend({
 	
-	all: function(collection, callback, store) {
-		this.ajax(this.buildUrl(store, collection), 'GET', {
+	all: function(type, collection, callback, store) {
+		this.ajax(this.buildUrl(store, type), 'GET', {
 			success: function(json) {
-				callback.call(store, collection, json);
+				callback.call(store, type, collection, json);
 			}
 		});
 	},
 	
-	findById: function(object, id, callback, store) {
-		this.ajax(this.buildUrl(store, object) + '/' + id, 'GET', {
+	findById: function(type, object, id, callback, store) {
+		this.ajax(this.buildUrl(store, type) + '/' + id, 'GET', {
 			success: function(json) {
 				callback.call(store, object, json);
 			}
@@ -17,7 +17,7 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
 	},
 	
 	add: function(object, callback, store) {
-		this.ajax(this.buildUrl(store, object), 'POST', {
+		this.ajax(this.buildUrl(store, object.constructor), 'POST', {
 			data: store.toJSON(object),
 			success: function(json) {
 				callback.call(store, object, null, json);
@@ -27,7 +27,7 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
 	
 	update: function(object, callback, store) {
 		var id = object.get('id');
-		this.ajax(this.buildUrl(store, object) + '/' + id, 'PUT', {
+		this.ajax(this.buildUrl(store, object.constructor) + '/' + id, 'PUT', {
 			data: store.toJSON(object),
 			success: function(json) {
 				callback.call(store, object, json);
@@ -37,7 +37,7 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
 	
 	destroy: function(object, callback, store) {
 		var id = object.get('id');
-		this.ajax(this.buildUrl(store, object) + '/' + id, 'DELETE', {
+		this.ajax(this.buildUrl(store, object.constructor) + '/' + id, 'DELETE', {
 			success: function(json) {
 				callback.call(store, object);
 			}
@@ -58,7 +58,7 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
 		jQuery.ajax(options);
 	},
 	
-	buildUrl: function(store, object) {
-		return '/' + this.getCollectionName(store, object);
+	buildUrl: function(store, type) {
+		return '/' + this.getCollectionName(store, type);
 	}
 });

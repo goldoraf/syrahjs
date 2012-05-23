@@ -29,18 +29,17 @@ Syrah.Store = Ember.Object.extend({
 	
 	findById: function(type, id) {
 		var object = type.create();
-		this.get('ds').findById(object, id, this.load, this);
+		this.get('ds').findById(type, object, id, this.load, this);
 		return object;
 	},
 	
 	all: function(type) {
-		var collection = this.createCollection(type);
-		this.get('ds').all(collection, this.loadMany, this);
+		var collection = Ember.A([]);
+		this.get('ds').all(type, collection, this.loadMany, this);
 		return collection;
 	},
 	
-	loadMany: function(collection, data) {
-		var type = collection.get('type');
+	loadMany: function(type, collection, data) {
 		var objects = [];
 		data.forEach(function(hash) {
 			objects.push(type.create(hash));
@@ -92,14 +91,6 @@ Syrah.Store = Ember.Object.extend({
             }
         }
         return object.getProperties(attrs);
-	},
-	
-	createCollection: function(type) {
-		return Syrah.Collection.create({ 
-			type: type, 
-			content: Ember.A([]), 
-			store: this
-		});
 	},
 	
 	getCollectionName: function(type) {
