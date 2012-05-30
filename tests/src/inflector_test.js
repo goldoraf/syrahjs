@@ -13,6 +13,22 @@ test("Inflector has a getTypeNamespace() method to get a type's namespace", func
 	equal(Syrah.Inflector.getTypeNamespace(Foo.BarTest), 'Foo');
 });
 
-test("Store has a getCollectionName() method to get a pluralized type's name", function() {
+test("Inflector has a getCollectionName() method to get a pluralized type's name", function() {
 	equal(Syrah.Inflector.getCollectionName(Foo.BarTest), 'bar_tests');
+});
+
+test("Inflector has a pluralize() method", function() {
+	equal(Syrah.Inflector.pluralize('process'), 'processes');
+	equal(Syrah.Inflector.pluralize('query'), 'queries');
+	equal(Syrah.Inflector.pluralize('wife'), 'wives');
+	equal(Syrah.Inflector.pluralize('person'), 'people');
+	equal(Syrah.Inflector.pluralize('test'), 'tests');
+});
+
+test("Inflector has a singular() method", function() {
+	equal(Syrah.Inflector.singularize('processes'), 'process');
+	equal(Syrah.Inflector.singularize('queries'), 'query');
+	equal(Syrah.Inflector.singularize('wives'), 'wife');
+	equal(Syrah.Inflector.singularize('people'), 'person');
+	equal(Syrah.Inflector.singularize('tests'), 'test');
 });
