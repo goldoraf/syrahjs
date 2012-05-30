@@ -78,6 +78,14 @@ test("Destroying an object makes a DELETE to /contacts/[id]", function() {
 	expectMethod('DELETE');
 });
 
+test("Setting a base URL", function() {
+	spiedDS.set('baseUrl', '/foo');
+	var store = Syrah.Store.create({ds:spiedDS});
+	store.all(Foo.Contact);
+	
+	expectUrl('/foo/contacts');
+});
+
 asyncTest("RESTApi DS can be used to retrieve an entire collection", function() {
 	var store = Syrah.Store.create({ds:mockedDS});
 	var collection = store.all(Foo.Contact);

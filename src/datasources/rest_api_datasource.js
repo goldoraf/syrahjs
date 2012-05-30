@@ -1,5 +1,7 @@
 Syrah.RESTApiDataSource = Syrah.DataSource.extend({
 	
+	baseUrl: '',
+	
 	all: function(type, collection, callback, store) {
 		this.ajax(this.buildUrl(store, type), 'GET', {
 			success: function(json) {
@@ -59,6 +61,6 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
 	},
 	
 	buildUrl: function(store, type) {
-		return '/' + this.getCollectionName(store, type);
+		return this.get('baseUrl') + '/' + this.getCollectionName(store, type);
 	}
 });
