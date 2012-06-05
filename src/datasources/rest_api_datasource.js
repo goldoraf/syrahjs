@@ -51,7 +51,8 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
 		options.url = url,
 		options.type = method,
 		options.dataType = 'json';
-		options.contentType = 'application/json; charset=utf-8';
+		options.contentType = this.get('urlEncodeData') === false ? 'application/json; charset=utf-8'
+                                                                  : 'application/x-www-form-urlencoded; charset=UTF-8';
 		options.context = this;
 
 		if (options.data && options.type !== 'GET' && this.get('urlEncodeData') === false) {
