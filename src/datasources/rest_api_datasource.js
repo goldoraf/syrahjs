@@ -1,6 +1,7 @@
 Syrah.RESTApiDataSource = Syrah.DataSource.extend({
 	
 	baseUrl: '',
+    urlEncodeData: false,
 	
 	all: function(type, collection, callback, store) {
 		this.ajax(this.buildUrl(store, type), 'GET', {
@@ -20,7 +21,7 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
 	
 	add: function(object, callback, store) {
 		this.ajax(this.buildUrl(store, object.constructor), 'POST', {
-			data: store.toJSON(object),
+			data: this.buildPayload(store, object),
 			success: function(json) {
 				callback.call(store, object, null, json);
 			}
@@ -30,7 +31,7 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
 	update: function(object, callback, store) {
 		var id = object.get('id');
 		this.ajax(this.buildUrl(store, object.constructor) + '/' + id, 'PUT', {
-			data: store.toJSON(object),
+			data: this.buildPayload(store, object),
 			success: function(json) {
 				callback.call(store, object, json);
 			}
@@ -59,6 +60,19 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
 		
 		jQuery.ajax(options);
 	},
+
+    buildPayload: function(store, object) {
+        if (this.get('urlEncodeData') !== false) {
+            var json = store.toJSON(object);
+            var parts = [];
+            var prefix = Syrah.Inflector.getTypeName(object.constructor);
+            for (var k in json) {
+                parts.push(prefix + '.' + k + '=' + encodeURIComponent(json[k]));
+            }
+            return parts.join('&');
+        }
+        return store.toJSON(object);
+    },
 	
 	buildUrl: function(store, type) {
 		return this.get('baseUrl') + '/' + this.getCollectionName(store, type);

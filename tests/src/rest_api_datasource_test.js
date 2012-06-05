@@ -70,6 +70,16 @@ test("Updating an object makes a PUT to /contacts/[id]", function() {
 	expectData({ id: 12345, firstname: 'John', lastname: 'Doe' });
 });
 
+test("Data can be urlecoded too", function() {
+    spiedDS.set('urlEncodeData', true);
+    var store = Syrah.Store.create({ds:spiedDS});
+    store.add(Foo.Contact.create({ firstname: 'John', lastname: 'Doe' }));
+
+    expectUrl('/contacts');
+    expectMethod('POST');
+    expectData("contact.firstname=John&contact.lastname=Doe");
+});
+
 test("Destroying an object makes a DELETE to /contacts/[id]", function() {
 	var store = Syrah.Store.create({ds:spiedDS});
 	store.destroy(Foo.Contact.create({ id: 12345, firstname: 'John', lastname: 'Doe' }));

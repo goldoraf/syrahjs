@@ -40,7 +40,7 @@ Syrah.HasManyCollection = Syrah.ModelCollection.extend({
     parentObject: null,
     foreignKey: null,
 
-    pushObject: function(object) {console.log(this.get('parentObject'));
+    pushObject: function(object) {
         var fk = this.get('foreignKey');
         if (fk === null) {
             fk = Syrah.Inflector.getFkForType(this.get('parentObject').constructor);
