@@ -2,8 +2,10 @@ Syrah.JSONMarshaller = Ember.Object.extend({
 	
 	marshall: function(object) {
 		var v, attrs = [];
+        var protected = Ember.get(object.constructor, 'protectedProperties') || [];
+
         for (var prop in object) {
-            if (object.hasOwnProperty(prop)) {
+            if (object.hasOwnProperty(prop) && protected.indexOf(prop) === -1) {
                 v = object[prop];
                 if (v === 'toString') {
                     continue;
@@ -14,7 +16,12 @@ Syrah.JSONMarshaller = Ember.Object.extend({
                 attrs.push(prop);
             }
         }
-        return object.getProperties(attrs);
+        var json = object.getProperties(attrs);
+
+        if (object.get('parentObject') !== undefined) {
+
+        }
+        return json;
 	},
 	
 	unmarshall: function(json, object) {

@@ -51,6 +51,10 @@ Syrah.Inflector.reopenClass({
 	getTypeNamespace: function(type) {
 		return type.toString().split(".")[0];
 	},
+
+    getFkForType: function(type) {
+        return Syrah.Inflector.getTypeName(type) + '_id';
+    },
 	
 	pluralize: function(singular) {
 		for (var regexString in Syrah.Inflector.pluralRules) {

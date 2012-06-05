@@ -2,6 +2,7 @@ module('Inflector tests', {
 	setup: function() {
 		window.Foo = Ember.Namespace.create();
 		Foo.BarTest = Ember.Object.extend();
+        Foo.Contact = Ember.Object.extend();
 	}
 });
 
@@ -31,4 +32,8 @@ test("Inflector has a singular() method", function() {
 	equal(Syrah.Inflector.singularize('wives'), 'wife');
 	equal(Syrah.Inflector.singularize('people'), 'person');
 	equal(Syrah.Inflector.singularize('tests'), 'test');
+});
+
+test("Inflector has a getFkForType() method to get a FK from a type", function() {
+    equal(Syrah.Inflector.getFkForType(Foo.Contact), 'contact_id');
 });

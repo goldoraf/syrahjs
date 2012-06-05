@@ -44,21 +44,11 @@ test("Object with 1-n association unmarshalling", function() {
 	equal(loadedContact.get('phones').objectAt(1).get('number'), '+87654321');
 });
 
-/*test("Object with 1-n association marshalling", function() {
-	var contact = Foo.Contact.create({ 
-		firstname: 'John', 
-		lastname: 'Doe',
-		addresses: [
-            Foo.Address.create({ street: "5th avenue", city: "NYC" }),
-            Foo.Address.create({ street: "rue de la Pompe", city: "Paris" }),
-		]
-	});
-	var json = { 
-		firstname: 'John', 
-		lastname: 'Doe',
-		addresses: [
-            { street: "5th avenue", city: "NYC" },
-            { street: "rue de la Pompe", city: "Paris" },
-		]
-	};
-});*/
+test("Protected properties should not be marshalled", function() {
+    Foo.Bar = Syrah.Model.extend({
+        protectedProperties: ['GUID'],
+        name: null
+    });
+    deepEqual(marshaller.marshall(Foo.Bar.create({name: 'John Doe'})), {name: 'John Doe'});
+});
+
