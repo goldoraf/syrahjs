@@ -53,11 +53,11 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
 		options.dataType = 'json';
 		options.contentType = 'application/json; charset=utf-8';
 		options.context = this;
-		
-		if (options.data && options.type !== 'GET') {
+
+		if (options.data && options.type !== 'GET' && this.get('urlEncodeData') === false) {
 			options.data = JSON.stringify(options.data);
 	    }
-		
+
 		jQuery.ajax(options);
 	},
 
