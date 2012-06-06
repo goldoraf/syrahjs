@@ -19,15 +19,27 @@ Syrah.Model.reopenClass({
 });
 
 Syrah.hasMany = function(type, options) {
-
-    Ember.set(type, 'protectedProperties', Ember.get(type, 'protectedProperties').pushObject('parentObject'));
-    var fk = (options !== undefined && options.foreignKey) ? options.foreignKey : null;
+    options = options || {};
+    var fk = options.foreignKey || null;
 
     return Ember.computed(function(key, value) {
         return Syrah.HasManyCollection.create({
             parentObject: this,
             foreignKey: fk
         });
+    }).property().cacheable();
+}
+
+Syrah.belongsTo = function(type, options) {
+    return Ember.computed(function(key, value) {
+        if (arguments.length === 2) {
+            options = options || {};
+            var fk = options.foreignKey || Syrah.Inflector.getFkForType(type);
+            this.set(fk, value.get('id'));
+            return value;
+        } else {
+            return null;
+        }
     }).property().cacheable();
 }
 

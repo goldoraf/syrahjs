@@ -11,6 +11,14 @@ module('Model test', {
 			lastname: null,
 			phones: Syrah.hasMany(Foo.Phone)
 		});
+
+        Foo.Author = Syrah.Model.extend({
+            name: null
+        });
+        Foo.Blog = Syrah.Model.extend({
+            title: null,
+            author: Syrah.belongsTo(Foo.Author)
+        });
 	}
 });
 
@@ -33,4 +41,15 @@ test("HasMany association", function() {
 
     contact.get('phones').pushObject(phone);
     equal(contact.get('phones').objectAt(0).get('contact_id'), 1234, "An object in a HasMany collection should maintain a FK to its parent object");
+});
+
+test("BelongsTo association", function() {
+    var blog = Foo.Blog.create({ title: 'Ember & JS' });
+    var author = Foo.Author.create({ id: 5678, name: 'John Doe' });
+    equal(blog.get('author'), null);
+
+    blog.set('author', author);
+
+    equal(blog.get('author_id'), 5678, "An object should maintain a FK to the object it belongs to");
+    equal(blog.get('author').get('name'), 'John Doe', "The object it belongs to can be retrieved");
 });
