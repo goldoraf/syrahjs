@@ -10,6 +10,15 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
 			}
 		});
 	},
+
+    find: function(type, collection, query, callback, store) {
+        this.ajax(this.buildUrl(store, type), 'GET', {
+            data: query,
+            success: function(json) {
+                callback.call(store, type, collection, json);
+            }
+        });
+    },
 	
 	findById: function(type, object, id, callback, store) {
 		this.ajax(this.buildUrl(store, type) + '/' + id, 'GET', {

@@ -25,7 +25,11 @@ Syrah.Store = Ember.Object.extend({
 	find: function(type, query) {
 		if (query === undefined) {
 			return this.all(type);
-		}
+		} else {
+            var collection = Ember.A([]);
+            this.get('ds').find(type, collection, query, this.loadMany, this);
+            return collection;
+        }
 	},
 	
 	findById: function(type, id) {
