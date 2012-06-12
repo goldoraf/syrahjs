@@ -45,7 +45,10 @@ test("Simple model marshalling", function() {
         name: String
     });
     var c = Contact.create({ name: 'John Doe' });
-
     deepEqual(marshaller.marshall(c), { name: 'John Doe' }, "Meta properties should not be marshalled");
+
+    c.set('id', 123);
+    c.setDbRef('addressbook_id', 456);
+    deepEqual(marshaller.marshall(c), { name: 'John Doe', id: 123, addressbook_id: 456 }, "DbRefs should be marshalled");
 });
 

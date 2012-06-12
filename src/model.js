@@ -14,10 +14,19 @@ Syrah.Model = Ember.Object.extend({
 });
 
 var expandPropertyDefinition = function(name, definition) {
-    if (definition === Number || definition === String || definition === Boolean || definition === Date || definition === Object) {
+    if (definition === Number || definition === String || definition === Boolean || definition === Date || definition === Object || definition.isModel === true) {
         definition = { type: definition };
     }
     Ember.assert("A property's definition must have a type", definition.type !== undefined);
+
+    if (definition.type.isModel) {
+        definition.isAssociation = true;
+        definition.foreignKey = Syrah.Inflector.getFkForType(definition.type);
+        definition.observer = function() {
+            if (this.get(name) === null) this.setDbRef(definition.foreignKey, null);
+            else this.setDbRef(definition.foreignKey, this.get(name).get('id'));
+        }
+    }
 
     if (definition.type === Syrah.HasMany) {
         Ember.assert("A HasMany must have an itemType", definition.itemType !== undefined);
@@ -49,6 +58,7 @@ Syrah.Model.reopenClass({
         }
 
         var klass = this.extend(properties);
+        klass.isModel = true;
         klass.__metadata__ = {
             primaryKey: primaryKey,
             definedProperties: propertiesMeta
@@ -60,6 +70,14 @@ Syrah.Model.reopenClass({
     create: function(data) {
         var instance = this._super.apply(this, arguments);
         instance.__dbrefs__ = {};
+
+        // TODO : put this in define()
+        var assocs = instance.getAssociations();
+        for (var assocName in assocs) {
+            if (assocs[assocName].observer) {
+                instance.addObserver(assocName, assocs[assocName].observer);
+            }
+        }
 
         return instance;
     }
@@ -76,6 +94,15 @@ Syrah.Model.reopen({
 
     getDbRef: function(key) {
         return this.__dbrefs__[key];
+    },
+
+    getAssociations: function() {
+        var assocs = {};
+        var props = this.getMetadata().definedProperties;
+        for (var propName in props) {
+            if (props[propName].isAssociation) assocs[propName] = props[propName];
+        }
+        return assocs;
     },
 
     getPropertyType: function(propertyName) {
@@ -109,19 +136,6 @@ Syrah.HasMany.getComputedProperty = function(options) {
     }).property().cacheable();
 }
 
-/*Syrah.belongsTo = function(type, options) {
-    return Ember.computed(function(key, value) {
-        if (arguments.length === 2) {
-            options = options || {};
-            var fk = options.foreignKey || Syrah.Inflector.getFkForType(type);
-            this.set(fk, value.get('id'));
-            return value;
-        } else {
-            return null;
-        }
-    }).property().cacheable();
-}*/
-
 Syrah.ModelCollection = Ember.ArrayProxy.extend({
     type: null,
     content: []
@@ -136,7 +150,7 @@ Syrah.HasManyCollection = Syrah.ModelCollection.extend({
         if (fk === null) {
             fk = Syrah.Inflector.getFkForType(this.get('parentObject').constructor);
         }
-        object.set(fk, this.get('parentObject').get('id'));
+        object.setDbRef(fk, this.get('parentObject').get('id'));
         this._super(object);
     }
 });

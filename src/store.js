@@ -60,7 +60,7 @@ Syrah.Store = Ember.Object.extend({
 	didAddObject: function(object, id, hash) {
 		// If the DS has not provided an ID, it must be provided in the returned hash
 		if (id === null) {
-			var pk = (object.get('primaryKey') !== undefined) ? object.get('primaryKey') : 'id';
+			var pk = object.hasOwnProperty('getPrimaryKey') ? object.getPrimaryKey() : 'id';
 			if (hash[pk] === undefined) {
 				throw "The DataSource has not provided an ID for the newly created object";
 			}
