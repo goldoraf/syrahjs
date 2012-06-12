@@ -52,3 +52,41 @@ test("Simple model marshalling", function() {
     deepEqual(marshaller.marshall(c), { name: 'John Doe', id: 123, addressbook_id: 456 }, "DbRefs should be marshalled");
 });
 
+test("Simple model unmarshalling", function() {
+    var Contact = Syrah.Model.define({
+        name: String
+    });
+    var loadedContact = marshaller.unmarshall({ name: 'John Doe' }, Contact.create());
+    equal(loadedContact.get('name'), 'John Doe', "Defined properties should be unmarshalled");
+
+    var loadedContact = marshaller.unmarshall({ name: 'John Doe' }, Contact.create());
+    ok(loadedContact.get('foo') === undefined, "Not defined properties should be ignored");
+});
+
+test("Simple model with HasMany association unmarshalling", function() {
+    window.Bar = Ember.Namespace.create();
+    Bar.Contact = Syrah.Model.define({
+        name: String,
+        phones: {
+            type: Syrah.HasMany,
+            itemType: "Bar.Phone"
+        }
+    });
+    Bar.Phone = Syrah.Model.define({
+        number: String
+    });
+
+    var json = {
+        name: 'John',
+        phones: [
+            { number: "+12345678" },
+            { number: "+87654321" },
+        ]
+    };
+    var loadedContact = marshaller.unmarshall(json, Bar.Contact.create());
+
+    equal(loadedContact.get('name'), 'John');
+    equal(loadedContact.get('phones').get('length'), 2);
+    ok(loadedContact.get('phones').objectAt(0) instanceof Bar.Phone);
+    equal(loadedContact.get('phones').objectAt(0).get('number'), '+12345678');
+});

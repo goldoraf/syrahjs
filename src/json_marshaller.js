@@ -5,6 +5,11 @@ Syrah.JSONMarshaller = Ember.Object.extend({
         return this.marshallSimpleObject(object);
 	},
 
+    unmarshall: function(json, object) {
+        if (object instanceof Syrah.Model) return this.unmarshallModel(json, object);
+        return this.unmarshallSimpleObject(json, object);
+    },
+
     marshallModel: function(object) {
         var definedProps = object.getDefinedProperties();
         var json = object.getProperties(definedProps);
@@ -14,7 +19,33 @@ Syrah.JSONMarshaller = Ember.Object.extend({
         return json;
     },
 
-    // WARNING : this doesn't work in IE8...
+    unmarshallModel: function(json, object) {
+        var definedProps = object.getMetadata().definedProperties;
+        var stdPropsValues = {};
+
+        object.beginPropertyChanges();
+        for (var key in json) {
+            if (!definedProps.hasOwnProperty(key)) continue;
+
+            var value = json[key];
+            var propDef = definedProps[key];
+
+            if (propDef.isAssociation === true && propDef.type === Syrah.HasMany && value instanceof Array) {
+                var assocType = (Ember.typeOf(propDef.itemType) === 'string') ? Ember.getPath(propDef.itemType) : propDef.itemType;
+                value.forEach(function(hash) {
+                    // TODO : use replaceContent() or something like that
+                    object.get(key).pushObject(this.unmarshallModel(hash, assocType.create()));
+                }, this);
+            } else {
+                stdPropsValues[key] = value;
+            }
+        }
+        object.setProperties(stdPropsValues);
+        object.endPropertyChanges();
+        return object;
+    },
+
+    // WARNING : this doesn't work in IE8... (*ALL* object properties are marshalled...)
     marshallSimpleObject: function(object) {
         var v, attrs = [];
 
@@ -35,7 +66,7 @@ Syrah.JSONMarshaller = Ember.Object.extend({
         return json;
     },
 	
-	unmarshall: function(json, object) {
+	unmarshallSimpleObject: function(json, object) {
 		var props = {};
 		for (var k in json) {
 			v = json[k];
