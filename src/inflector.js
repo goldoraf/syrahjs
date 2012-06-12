@@ -55,6 +55,16 @@ Syrah.Inflector.reopenClass({
     getFkForType: function(type) {
         return Syrah.Inflector.getTypeName(type) + '_id';
     },
+
+    guessAssociationType: function(collectionName, parentType) {
+        var currentNamespace = Syrah.Inflector.getTypeNamespace(parentType);
+        var possibleType = Syrah.Inflector.singularize(collectionName).camelize().ucfirst();
+
+        if (window[currentNamespace] && window[currentNamespace][possibleType]) {
+            return window[currentNamespace][possibleType];
+        }
+        return undefined;
+    },
 	
 	pluralize: function(singular) {
 		for (var regexString in Syrah.Inflector.pluralRules) {

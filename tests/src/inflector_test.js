@@ -3,6 +3,7 @@ module('Inflector tests', {
 		window.Foo = Ember.Namespace.create();
 		Foo.BarTest = Ember.Object.extend();
         Foo.Contact = Ember.Object.extend();
+        Foo.Phone = Ember.Object.extend();
 	}
 });
 
@@ -16,6 +17,10 @@ test("Inflector has a getTypeNamespace() method to get a type's namespace", func
 
 test("Inflector has a getCollectionName() method to get a pluralized type's name", function() {
 	equal(Syrah.Inflector.getCollectionName(Foo.BarTest), 'bar_tests');
+});
+
+test("Inflector has a method() to guess an association's type", function() {
+    equal(Syrah.Inflector.guessAssociationType('phones', Foo.Contact), Foo.Phone);
 });
 
 test("Inflector has a pluralize() method", function() {

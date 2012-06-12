@@ -21,11 +21,7 @@ test("Simple object marshalling", function() {
 	deepEqual(marshaller.marshall(contact), { firstname: 'John', lastname: 'Doe' });
 });
 
-test("Marshaller has a method() to guess an association's type", function() {
-	equal(marshaller.inflectAssociationType('phones', Foo.Contact), Foo.Phone);
-});
-
-test("Object with 1-n association unmarshalling", function() {
+test("Simple object with 1-n association unmarshalling", function() {
 	var json = { 
 		firstname: 'John', 
 		lastname: 'Doe',
@@ -44,11 +40,12 @@ test("Object with 1-n association unmarshalling", function() {
 	equal(loadedContact.get('phones').objectAt(1).get('number'), '+87654321');
 });
 
-test("Protected properties should not be marshalled", function() {
-    Foo.Bar = Syrah.Model.extend({
-        protectedProperties: ['GUID'],
-        name: null
+test("Simple model marshalling", function() {
+    var Contact = Syrah.Model.define({
+        name: String
     });
-    deepEqual(marshaller.marshall(Foo.Bar.create({name: 'John Doe'})), {name: 'John Doe'});
+    var c = Contact.create({ name: 'John Doe' });
+
+    deepEqual(marshaller.marshall(c), { name: 'John Doe' }, "Meta properties should not be marshalled");
 });
 

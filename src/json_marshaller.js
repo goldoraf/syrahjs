@@ -1,11 +1,22 @@
 Syrah.JSONMarshaller = Ember.Object.extend({
 	
 	marshall: function(object) {
-		var v, attrs = [];
-        var protected = Ember.get(object.constructor, 'protectedProperties') || [];
+		if (object instanceof Syrah.Model) return this.marshallModel(object);
+        return this.marshallSimpleObject(object);
+	},
+
+    marshallModel: function(object) {
+        var definedProps = object.getDefinedProperties();
+        var json = object.getProperties(definedProps);
+
+        return json;
+    },
+
+    marshallSimpleObject: function(object) {
+        var v, attrs = [];
 
         for (var prop in object) {
-            if (object.hasOwnProperty(prop) && protected.indexOf(prop) === -1) {
+            if (object.hasOwnProperty(prop)) {
                 v = object[prop];
                 if (v === 'toString') {
                     continue;
@@ -18,11 +29,8 @@ Syrah.JSONMarshaller = Ember.Object.extend({
         }
         var json = object.getProperties(attrs);
 
-        if (object.get('parentObject') !== undefined) {
-
-        }
         return json;
-	},
+    },
 	
 	unmarshall: function(json, object) {
 		var props = {};
@@ -30,7 +38,8 @@ Syrah.JSONMarshaller = Ember.Object.extend({
 			v = json[k];
 			if (v instanceof Array) {
 				props[k] = Ember.A([]);
-				var assocType = this.inflectAssociationType(k, object.constructor);
+				var assocType = Syrah.Inflector.guessAssociationType(k, object.constructor);
+                if (assocType === undefined) assocType = Ember.Object;
 				v.forEach(function(hash) {
 					props[k].push(this.unmarshall(hash, assocType.create()));
 				}, this);
@@ -42,15 +51,5 @@ Syrah.JSONMarshaller = Ember.Object.extend({
 		object.setProperties(props);
 		object.endPropertyChanges();
 		return object;
-	},
-	
-	inflectAssociationType: function(collectionName, parentType) {
-		var currentNamespace = Syrah.Inflector.getTypeNamespace(parentType);
-		var possibleType = Syrah.Inflector.singularize(collectionName).camelize().ucfirst();
-		
-		if (window[currentNamespace] && window[currentNamespace][possibleType]) {
-			return window[currentNamespace][possibleType];
-		}
-		return Ember.Object;
 	}
 });
