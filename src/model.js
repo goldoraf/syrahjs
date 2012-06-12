@@ -130,6 +130,8 @@ Syrah.HasMany.getComputedProperty = function(options) {
 
     return Ember.computed(function(key, value) {
         return Syrah.HasManyCollection.create({
+            type: options.type,
+            content: [],
             parentObject: this,
             foreignKey: fk
         });

@@ -14,6 +14,7 @@ Syrah.JSONMarshaller = Ember.Object.extend({
         return json;
     },
 
+    // WARNING : this doesn't work in IE8...
     marshallSimpleObject: function(object) {
         var v, attrs = [];
 

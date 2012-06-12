@@ -38,8 +38,13 @@ test("HasMany association usage", function() {
     ok(contact.get('phones').get('parentObject') !== undefined, "A HasMany collection should maintain a link to its parent object");
     equal(contact.get('phones').get('parentObject').get('firstname'), 'John', "A HasMany collection should maintain a link to its parent object");
 
+
+
     contact.get('phones').pushObject(phone);
     equal(contact.get('phones').objectAt(0).getDbRef('contact_id'), 1234, "An object in a HasMany collection should maintain a DbRef to its parent object");
+
+    var contact2 = Foo.Contact.create({ id: 5678, firstname: 'Jane', lastname: 'Doe' });
+    equal(contact2.get('phones').get('length'), 0, "Different objects should have different HasMany collections");
 });
 
 test("BelongsTo association usage", function() {
