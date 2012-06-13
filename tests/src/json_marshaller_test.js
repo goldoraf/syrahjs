@@ -66,7 +66,7 @@ test("Simple model unmarshalling", function() {
     equal(loadedContact.get('id'), 123, "DbRefs can be unmarshalled");
 });
 
-test("Simple model with HasMany association (un)marshalling", function() {
+test("Model with HasMany association (un)marshalling", function() {
     window.Bar = Ember.Namespace.create();
     Bar.Contact = Syrah.Model.define({
         name: String,
@@ -94,4 +94,28 @@ test("Simple model with HasMany association (un)marshalling", function() {
 
     var generatedJson = marshaller.marshall(loadedContact);
     ok(!generatedJson.hasOwnProperty('phones'), "HasMany associations should not be marshalled by default");
+});
+
+test("Model with BelongsTo association (un)marshalling", function() {
+    window.Hello = Ember.Namespace.create();
+    Hello.Author = Syrah.Model.define({
+        name: String
+    });
+    Hello.Blog = Syrah.Model.define({
+        title: String,
+        author: Hello.Author
+    });
+
+    var json = {
+        title: 'My blog',
+        author: {
+            name: 'John Doe'
+        }
+    };
+
+    var loadedBlog = marshaller.unmarshall(json, Hello.Blog.create());
+
+    ok(loadedBlog.get('author') !== undefined, "An associated object can be unmarshalled");
+    ok(loadedBlog.get('author') instanceof Hello.Author, "It is correctly typed");
+    equal(loadedBlog.get('author').get('name'), 'John Doe');
 });
