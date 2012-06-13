@@ -21,13 +21,19 @@ Syrah.JSONMarshaller = Ember.Object.extend({
 
     unmarshallModel: function(json, object) {
         var definedProps = object.getMetadata().definedProperties;
+        var dbRefsPossibleKeys = object.getDbRefsPossibleKeys();
         var stdPropsValues = {};
 
         object.beginPropertyChanges();
         for (var key in json) {
+            var value = json[key];
+
+            if (dbRefsPossibleKeys.indexOf(key) !== -1) {
+                object.setDbRef(key, value);
+            }
+
             if (!definedProps.hasOwnProperty(key)) continue;
 
-            var value = json[key];
             var propDef = definedProps[key];
 
             if (propDef.isAssociation === true && propDef.type === Syrah.HasMany && value instanceof Array) {

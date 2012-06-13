@@ -21,7 +21,9 @@ var expandPropertyDefinition = function(name, definition) {
 
     if (definition.type.isModel) {
         definition.isAssociation = true;
-        definition.foreignKey = Syrah.Inflector.getFkForType(definition.type);
+        if (definition.foreignKey === undefined) {
+            definition.foreignKey = Syrah.Inflector.getFkForType(definition.type);
+        }
         definition.observer = function() {
             if (this.get(name) === null) this.setDbRef(definition.foreignKey, null);
             else this.setDbRef(definition.foreignKey, this.get(name).get('id'));
@@ -94,6 +96,10 @@ Syrah.Model.reopen({
 
     getDbRef: function(key) {
         return this.__dbrefs__[key];
+    },
+
+    getDbRefsPossibleKeys: function() {
+        return [this.getPrimaryKey()];
     },
 
     getAssociations: function() {

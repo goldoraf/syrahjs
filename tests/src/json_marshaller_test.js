@@ -61,6 +61,9 @@ test("Simple model unmarshalling", function() {
 
     var loadedContact = marshaller.unmarshall({ name: 'John Doe' }, Contact.create());
     ok(loadedContact.get('foo') === undefined, "Not defined properties should be ignored");
+
+    var loadedContact = marshaller.unmarshall({ id:123, name: 'John Doe' }, Contact.create());
+    equal(loadedContact.get('id'), 123, "DbRefs can be unmarshalled");
 });
 
 test("Simple model with HasMany association unmarshalling", function() {
