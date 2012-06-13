@@ -182,10 +182,16 @@ Syrah.typecastFor = function(type) {
 Syrah.typecasts = {
     'date' : {
         fromJson: function(value) {
-            return new Date(value);
+            if (typeof value === 'string' || typeof value === 'number') {
+                return new Date(value);
+            }
+            return null;
         },
         toJson: function(value) {
-            return value.toISOString();
+            if (value instanceof Date) {
+                return value.toISOString();
+            }
+            return value;
         }
     }
 }
