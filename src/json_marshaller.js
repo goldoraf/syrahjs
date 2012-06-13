@@ -14,11 +14,20 @@ Syrah.JSONMarshaller = Ember.Object.extend({
         var primitiveProps = object.getPrimitiveProperties();
         var embeddedAssocs = embedded || [];
 
-        var json = object.getProperties(primitiveProps);
+        var data = object.getProperties(primitiveProps);
 
-        for (var key in object.__dbrefs__) json[key] = object.__dbrefs__[key];
+        var definedProps = object.getMetadata().definedProperties;
+        for (var propName in data) {
+            var type = definedProps[propName].type;
+            var typecast = Syrah.typecastFor(type);
+            if (typecast !== undefined) {
+                data[propName] = typecast.toJson(data[propName]);
+            }
+        }
 
-        return json;
+        for (var key in object.__dbrefs__) data[key] = object.__dbrefs__[key];
+
+        return data;
     },
 
     unmarshallModel: function(json, object) {
@@ -50,6 +59,10 @@ Syrah.JSONMarshaller = Ember.Object.extend({
                     object.set(key, this.unmarshallModel(value, assocType.create()))
                 }
             } else {
+                var typecast = Syrah.typecastFor(propDef.type);
+                if (typecast !== undefined) {
+                    value = typecast.fromJson(value);
+                }
                 stdPropsValues[key] = value;
             }
         }

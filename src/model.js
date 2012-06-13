@@ -168,3 +168,24 @@ Syrah.HasManyCollection = Syrah.ModelCollection.extend({
         this._super(object);
     }
 });
+
+Syrah.typecastFor = function(type) {
+    switch(type) {
+        case Date:
+            return Syrah.typecasts['date'];
+            break;
+        default:
+            return undefined;
+    }
+}
+
+Syrah.typecasts = {
+    'date' : {
+        fromJson: function(value) {
+            return new Date(value);
+        },
+        toJson: function(value) {
+            return value.toISOString();
+        }
+    }
+}

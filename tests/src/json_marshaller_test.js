@@ -50,6 +50,14 @@ test("Simple model marshalling", function() {
     c.set('id', 123);
     c.setDbRef('addressbook_id', 456);
     deepEqual(marshaller.marshall(c), { name: 'John Doe', id: 123, addressbook_id: 456 }, "DbRefs should be marshalled");
+
+    var Contact = Syrah.Model.define({
+        name: String,
+        dob: Date
+    });
+    var c = Contact.create({ name: 'John Doe', dob: new Date(1969, 6, 21) });
+    deepEqual(marshaller.marshall(c), { name: 'John Doe', dob: '1969-07-20T23:00:00.000Z' }, "Dates should be properly formatted");
+
 });
 
 test("Simple model unmarshalling", function() {
@@ -59,11 +67,18 @@ test("Simple model unmarshalling", function() {
     var loadedContact = marshaller.unmarshall({ name: 'John Doe' }, Contact.create());
     equal(loadedContact.get('name'), 'John Doe', "Defined properties should be unmarshalled");
 
-    var loadedContact = marshaller.unmarshall({ name: 'John Doe' }, Contact.create());
+    var loadedContact = marshaller.unmarshall({ name: 'John Doe', foo: 'bar' }, Contact.create());
     ok(loadedContact.get('foo') === undefined, "Not defined properties should be ignored");
 
     var loadedContact = marshaller.unmarshall({ id:123, name: 'John Doe' }, Contact.create());
     equal(loadedContact.get('id'), 123, "DbRefs can be unmarshalled");
+
+    var Contact = Syrah.Model.define({
+        name: String,
+        dob: Date
+    });
+    var loadedContact = marshaller.unmarshall({ name: 'John Doe', dob: '1969-07-20T23:00:00.000Z' }, Contact.create());
+    deepEqual(loadedContact.get('dob'), new Date(1969, 6, 21), "Dates can be unmarshalled");
 });
 
 test("Model with HasMany association (un)marshalling", function() {
