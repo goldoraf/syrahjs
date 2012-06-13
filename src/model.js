@@ -120,6 +120,12 @@ Syrah.Model.reopen({
         return this.getMetadata().definedProperties[propertyName];
     },
 
+    getPrimitiveProperties: function() {
+        return this.getDefinedProperties().filter(function(item) {
+            return !this.getPropertyDefinition(item).isAssociation;
+        }, this);
+    },
+
     getDefinedProperties: function() {
         return Ember.keys(this.getMetadata().definedProperties);
     },

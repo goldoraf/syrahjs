@@ -66,7 +66,7 @@ test("Simple model unmarshalling", function() {
     equal(loadedContact.get('id'), 123, "DbRefs can be unmarshalled");
 });
 
-test("Simple model with HasMany association unmarshalling", function() {
+test("Simple model with HasMany association (un)marshalling", function() {
     window.Bar = Ember.Namespace.create();
     Bar.Contact = Syrah.Model.define({
         name: String,
@@ -88,8 +88,10 @@ test("Simple model with HasMany association unmarshalling", function() {
     };
     var loadedContact = marshaller.unmarshall(json, Bar.Contact.create());
 
-    equal(loadedContact.get('name'), 'John');
-    equal(loadedContact.get('phones').get('length'), 2);
-    ok(loadedContact.get('phones').objectAt(0) instanceof Bar.Phone);
+    equal(loadedContact.get('phones').get('length'), 2, "A HasMany association can be unmarshalled");
+    ok(loadedContact.get('phones').objectAt(0) instanceof Bar.Phone, "Its objects are correctly typed");
     equal(loadedContact.get('phones').objectAt(0).get('number'), '+12345678');
+
+    var generatedJson = marshaller.marshall(loadedContact);
+    ok(!generatedJson.hasOwnProperty('phones'), "HasMany associations should not be marshalled by default");
 });

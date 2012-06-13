@@ -10,9 +10,11 @@ Syrah.JSONMarshaller = Ember.Object.extend({
         return this.unmarshallSimpleObject(json, object);
     },
 
-    marshallModel: function(object) {
-        var definedProps = object.getDefinedProperties();
-        var json = object.getProperties(definedProps);
+    marshallModel: function(object, embedded) {
+        var primitiveProps = object.getPrimitiveProperties();
+        var embeddedAssocs = embedded || [];
+
+        var json = object.getProperties(primitiveProps);
 
         for (var key in object.__dbrefs__) json[key] = object.__dbrefs__[key];
 
