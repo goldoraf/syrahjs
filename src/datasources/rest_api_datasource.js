@@ -77,7 +77,8 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
             var parts = [];
             var prefix = Syrah.Inflector.getTypeName(object.constructor);
             for (var k in json) {
-                parts.push(prefix + '.' + k + '=' + encodeURIComponent(json[k]));
+                var value = json[k] === null ? '' : encodeURIComponent(json[k]);
+                parts.push(prefix + '.' + k + '=' + value);
             }
             return parts.join('&');
         }
