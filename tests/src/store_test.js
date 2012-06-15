@@ -78,7 +78,7 @@ test("Store has a toJSON() method to retrieve an object's attributes' values", f
 
 test("Calling Store.add() should invoke his datasource's add()", function() {
 	var ds = Syrah.DataSource.create({
-		add: function(object, callback, store) {
+		add: function(type, object, callback, store) {
 			ok(true, "DataSource.add() was called");
 			equal(store, currentStore, "DataSource.add() was called with the right store");
 			callback.call(store, object, '123');
@@ -114,7 +114,7 @@ test("Store has a didAddObject() callback that sets the object's id when provide
 
 test("Calling Store.update() should invoke his datasource's update()", function() {
 	var ds = Syrah.DataSource.create({
-		update: function(object, callback, store) {
+		update: function(type, object, callback, store) {
 			ok(true, "DataSource.update() was called");
 			equal(store, currentStore, "DataSource.update() was called with the right store");
 			callback.call(store, object);
@@ -134,7 +134,7 @@ test("Calling Store.update() should invoke his datasource's update()", function(
 
 test("Calling Store.destroy() should invoke his datasource's destroy()", function() {
 	var ds = Syrah.DataSource.create({
-		destroy: function(object, callback, store) {
+		destroy: function(type, object, callback, store) {
 			ok(true, "DataSource.destroy() was called");
 			equal(store, currentStore, "DataSource.destroy() was called with the right store");
 			callback.call(store, object);

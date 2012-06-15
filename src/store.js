@@ -3,22 +3,18 @@ Syrah.Store = Ember.Object.extend({
 	ds: null,
 	marshaller: Syrah.JSONMarshaller.create(),
 	
-	init: function() {
-		
-	},
-	
 	add: function(object) {
-		this.get('ds').add(object, this.didAddObject, this);
+		this.get('ds').add(object.constructor, object, this.didAddObject, this);
 		return object;
 	},
 	
 	update: function(object) {
-		this.get('ds').update(object, this.didUpdateObject, this);
+		this.get('ds').update(object.constructor, object, this.didUpdateObject, this);
 		return object;
 	},
 	
 	destroy: function(object) {
-		this.get('ds').destroy(object, this.didDestroyObject, this);
+		this.get('ds').destroy(object.constructor, object, this.didDestroyObject, this);
 		return;
 	},
 	

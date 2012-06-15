@@ -28,8 +28,8 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
 		});
 	},
 	
-	add: function(object, callback, store) {
-		this.ajax(this.buildUrl(object.constructor), 'POST', {
+	add: function(type, object, callback, store) {
+		this.ajax(this.buildUrl(type), 'POST', {
 			data: this.buildPayload(store, object),
 			success: function(json) {
 				callback.call(store, object, null, json);
@@ -37,9 +37,9 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
 		});
 	},
 	
-	update: function(object, callback, store) {
+	update: function(type, object, callback, store) {
 		var id = object.get('id');
-		this.ajax(this.buildUrl(object.constructor) + '/' + id, 'PUT', {
+		this.ajax(this.buildUrl(type) + '/' + id, 'PUT', {
 			data: this.buildPayload(store, object),
 			success: function(json) {
 				callback.call(store, object, json);
@@ -47,9 +47,9 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
 		});
 	},
 	
-	destroy: function(object, callback, store) {
+	destroy: function(type, object, callback, store) {
 		var id = object.get('id');
-		this.ajax(this.buildUrl(object.constructor) + '/' + id, 'DELETE', {
+		this.ajax(this.buildUrl(type) + '/' + id, 'DELETE', {
 			success: function(json) {
 				callback.call(store, object);
 			}

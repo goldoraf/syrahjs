@@ -40,8 +40,8 @@ Syrah.LocalStorageDataSource = Syrah.DataSource.extend({
 		return objects;
 	},
 	
-	add: function(object, callback, store) {
-		var collectionName = this.getCollectionName(object.constructor);
+	add: function(type, object, callback, store) {
+		var collectionName = this.getCollectionName(type);
 		var keys = this.keys(collectionName);
 		var objectKey = guid();
 		keys.push(objectKey);
@@ -52,8 +52,8 @@ Syrah.LocalStorageDataSource = Syrah.DataSource.extend({
 		callback.call(store, object, objectKey, data);
 	},
 	
-	update: function(object, callback, store) {
-		var collectionName = this.getCollectionName(object.constructor);
+	update: function(type, object, callback, store) {
+		var collectionName = this.getCollectionName(type);
 		var objectKey = object.get('id');
 		// TODO : check key existence ?
 		var data = store.toJSON(object);
@@ -61,8 +61,8 @@ Syrah.LocalStorageDataSource = Syrah.DataSource.extend({
 		callback.call(store, object, data);
 	},
 	
-	destroy: function(object, callback, store) {
-		var collectionName = this.getCollectionName(object.constructor);
+	destroy: function(type, object, callback, store) {
+		var collectionName = this.getCollectionName(type);
 		var keys = this.keys(collectionName);
 		var objectKey = object.get('id');
 		keys.removeAt(keys.indexOf(objectKey));
