@@ -4,23 +4,15 @@ Syrah.Store = Ember.Object.extend({
 	marshaller: Syrah.JSONMarshaller.create(),
 	
 	add: function(object, options) {
-		options = options || {};
-        var successCallbacks = [];
-        successCallbacks.push([this.didAddObject, this, object]);
-        if (options.success !== undefined && options.success instanceof Array) {
-            successCallbacks.push(options.success);
-        }
-        var errorCallbacks = [];
-        errorCallbacks.push([this.didError, this, object]);
-        if (options.error !== undefined && options.error instanceof Array) {
-            errorCallbacks.push(options.error);
-        }
+        var successCallbacks = this.prepareCallbacks([this.didAddObject, this, object], options, 'success');
+        var errorCallbacks   = this.prepareCallbacks([this.didError, this, object], options, 'error');
         this.get('ds').add(object.constructor, this.toJSON(object), successCallbacks, errorCallbacks);
 		return object;
 	},
 	
-	update: function(object) {
-		this.get('ds').update(object.constructor, object, this.didUpdateObject, this);
+	update: function(object, options) {
+
+        this.get('ds').update(object.constructor, object, this.didUpdateObject, this);
 		return object;
 	},
 	
@@ -89,5 +81,15 @@ Syrah.Store = Ember.Object.extend({
 	
 	toJSON: function(object) {
 		return this.get('marshaller').marshall(object);
-	}
+	},
+
+    prepareCallbacks: function(firstCallback, options, optionKey) {
+        options = options || {};
+        var callbacks = [];
+        callbacks.push(firstCallback);
+        if (options[optionKey] !== undefined && options[optionKey] instanceof Array) {
+            callbacks.push(options[optionKey]);
+        }
+        return callbacks;
+    }
 });
