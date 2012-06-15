@@ -28,13 +28,10 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
 		});
 	},
 	
-	add: function(type, json, successCallbacks) {
+	add: function(type, json, successCallbacks, errorCallbacks) {
 		this.ajax(this.buildUrl(type), 'POST', {
-			data: this.encodePayload(type, json),
-			success: function(json) {
-				this.executeCallbacks(successCallbacks, json);
-			}
-		});
+			data: this.encodePayload(type, json)
+		}, successCallbacks, errorCallbacks);
 	},
 	
 	update: function(type, object, callback, store) {
@@ -56,7 +53,7 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
 		});
 	},
 	
-	ajax: function(url, method, options) {
+	ajax: function(url, method, options, successCallbacks, errorCallbacks) {
 		options.url = url,
 		options.type = method,
 		options.dataType = 'json';
@@ -67,6 +64,17 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
 		if (options.data && options.type !== 'GET' && this.get('urlEncodeData') === false) {
 			options.data = JSON.stringify(options.data);
 	    }
+
+        if (options.success === undefined && successCallbacks !== undefined) {
+            options.success = function(json) {
+                this.executeCallbacks(successCallbacks, json);
+            };
+        }
+        if (options.error === undefined && errorCallbacks !== undefined) {
+            options.error = function(xhr, textStatus, errorThrown) {
+                this.executeCallbacks(errorCallbacks, errorThrown, xhr);
+            };
+        }
 
 		jQuery.ajax(options);
 	},

@@ -5,13 +5,14 @@ Syrah.DataSource = Ember.Object.extend({
 	findById: null,
 	add: null,
 
-    executeCallbacks: function(callbacks, json) {
+    executeCallbacks: function(callbacks) {
+        var passedArguments = arguments;
         callbacks.forEach(function(args) {
             var callback = args.shift();
             var context = args.shift();
-            args.push(json);
+            for (var i = 1; i < passedArguments.length; i++) { args.push(passedArguments[i]); }
             callback.apply(context, args);
-        });
+        }, this);
     },
 	
 	getCollectionName: function(type) {

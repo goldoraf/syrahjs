@@ -88,7 +88,7 @@ test("Calling Store.add() should invoke his datasource's add()", function() {
 	currentStore.reopen({
 		didAddObject: function(object, json) {
 			ok(true, "Store callback didAddObject() was called");
-			deepEqual({ firstname: 'John', lastname: 'Doe' }, json, "Store callback didAddObject() was passed the JSON");
+			deepEqual(json, { firstname: 'John', lastname: 'Doe' }, "Store callback didAddObject() was passed the JSON");
 		},
 
         additionalCallback: function(json) {

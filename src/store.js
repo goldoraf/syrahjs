@@ -10,7 +10,12 @@ Syrah.Store = Ember.Object.extend({
         if (options.success !== undefined && options.success instanceof Array) {
             successCallbacks.push(options.success);
         }
-        this.get('ds').add(object.constructor, this.toJSON(object), successCallbacks);
+        var errorCallbacks = [];
+        errorCallbacks.push([this.didError, this, object]);
+        if (options.error !== undefined && options.error instanceof Array) {
+            errorCallbacks.push(options.error);
+        }
+        this.get('ds').add(object.constructor, this.toJSON(object), successCallbacks, errorCallbacks);
 		return object;
 	},
 	
@@ -77,6 +82,10 @@ Syrah.Store = Ember.Object.extend({
 	didDestroyObject: function(object) {
 		object.destroy();
 	},
+
+    didError: function(object, error) {
+        // TODO : do something smart here...
+    },
 	
 	toJSON: function(object) {
 		return this.get('marshaller').marshall(object);

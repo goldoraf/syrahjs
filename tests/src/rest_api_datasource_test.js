@@ -2,14 +2,13 @@ module('RESTApiDataSource test', {
 	setup: function() {
 		$.mockjax({
 		  url: '/contacts',
-		  //responseTime: 750,
 		  responseText: [
 		      { firstname: 'John', lastname: 'Doe' },
 		      { firstname: 'Jane', lastname: 'Doe' }
 		  ]
 		});
 		
-		mockedDS = Syrah.RESTApiDataSource.create();
+		mockedDS = Syrah.RESTApiDataSource.create({});
 		
 		spiedDS = Syrah.RESTApiDataSource.create({
 			ajax: function(url, method, options) {
@@ -105,4 +104,14 @@ asyncTest("RESTApi DS can be used to retrieve an entire collection", function() 
 		equal(collection.objectAt(1).get('firstname'), 'Jane');
 		start();
 	}, 1000);
+});
+
+asyncTest("RESTApi DS ajax() method should call provided callbacks in case of success", function() {
+    mockedDS.reopen({
+        dummySuccessCallback: function() {
+            ok(true, "The provided success callback was called");
+            start();
+        }
+    });
+    mockedDS.ajax('/contacts', 'GET', {}, [[mockedDS.dummySuccessCallback, mockedDS]]);
 });
