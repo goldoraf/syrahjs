@@ -28,11 +28,11 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
 		});
 	},
 	
-	add: function(type, object, callback, store) {
+	add: function(type, json, successCallbacks) {
 		this.ajax(this.buildUrl(type), 'POST', {
-			data: this.buildPayload(store, object),
+			data: this.encodePayload(type, json),
 			success: function(json) {
-				callback.call(store, object, null, json);
+				this.executeCallbacks(successCallbacks, json);
 			}
 		});
 	},
@@ -83,6 +83,19 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
             return parts.join('&');
         }
         return store.toJSON(object);
+    },
+
+    encodePayload: function(type, json) {
+        if (this.get('urlEncodeData') !== false) {
+            var parts = [];
+            var prefix = Syrah.Inflector.getTypeName(type);
+            for (var k in json) {
+                var value = json[k] === null ? '' : encodeURIComponent(json[k]);
+                parts.push(prefix + '.' + k + '=' + value);
+            }
+            return parts.join('&');
+        }
+        return json;
     },
 	
 	buildUrl: function(type) {

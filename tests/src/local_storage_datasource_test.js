@@ -47,9 +47,9 @@ test("LocalStorage DS can persist an object", function() {
 	var obi = Foo.Contact.create({ firstname: 'Obi-Wan', lastname: 'Kenobi' });
 	var store = Syrah.Store.create({
 		ds:ds,
-		didAddObject: function(object, id) {
-			equal(localStorage.getItem('test:contacts'), '12345,67890,'+id);
-			equal(localStorage.getItem('test:contacts:'+id), JSON.stringify({ firstname: 'Obi-Wan', lastname: 'Kenobi' }));
+		didAddObject: function(object, json) {
+			equal(localStorage.getItem('test:contacts'), '12345,67890,'+json['id']);
+			equal(localStorage.getItem('test:contacts:'+json['id']), JSON.stringify({ firstname: 'Obi-Wan', lastname: 'Kenobi' }));
 		}
 	});
 	

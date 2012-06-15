@@ -78,37 +78,32 @@ test("Store has a toJSON() method to retrieve an object's attributes' values", f
 
 test("Calling Store.add() should invoke his datasource's add()", function() {
 	var ds = Syrah.DataSource.create({
-		add: function(type, object, callback, store) {
+		add: function(type, json, successCallbacks) {
 			ok(true, "DataSource.add() was called");
-			equal(store, currentStore, "DataSource.add() was called with the right store");
-			callback.call(store, object, '123');
+            this.executeCallbacks(successCallbacks, json);
 		}
 	});
 	
 	var currentStore = Syrah.Store.create({ ds: ds });
 	currentStore.reopen({
-		didAddObject: function(object, id, hash) {
+		didAddObject: function(object, json) {
 			ok(true, "Store callback didAddObject() was called");
-			equal(id, '123', "Store callback didAddObject() was passed an ID");
-		} 
+			deepEqual({ firstname: 'John', lastname: 'Doe' }, json, "Store callback didAddObject() was passed the JSON");
+		},
+
+        additionalCallback: function(json) {
+            ok(true, "The provided 'success' option callback was called");
+        }
 	});
 	
-	currentStore.add(Foo.Contact.create({ firstname: 'John', lastname: 'Doe' }));
-});
-
-test("Store has a didAddObject() callback that sets the object's id", function() {
-	var store = Syrah.Store.create();
-	var contact = Foo.Contact.create({ firstname: 'John', lastname: 'Doe' });
-	
-	store.didAddObject(contact, 12345, {});
-	equal(contact.get('id'), 12345);
+	currentStore.add(Foo.Contact.create({ firstname: 'John', lastname: 'Doe' }), { success: [currentStore.additionalCallback, currentStore] });
 });
 
 test("Store has a didAddObject() callback that sets the object's id when provided in the hash", function() {
 	var store = Syrah.Store.create();
 	var contact = Foo.Contact.create({ firstname: 'John', lastname: 'Doe' });
 	
-	store.didAddObject(contact, null, { id: 12345 });
+	store.didAddObject(contact, { id: 12345 });
 	equal(contact.get('id'), 12345);
 });
 

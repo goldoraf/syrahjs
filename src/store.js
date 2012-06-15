@@ -3,8 +3,14 @@ Syrah.Store = Ember.Object.extend({
 	ds: null,
 	marshaller: Syrah.JSONMarshaller.create(),
 	
-	add: function(object) {
-		this.get('ds').add(object.constructor, object, this.didAddObject, this);
+	add: function(object, options) {
+		options = options || {};
+        var successCallbacks = [];
+        successCallbacks.push([this.didAddObject, this, object]);
+        if (options.success !== undefined && options.success instanceof Array) {
+            successCallbacks.push(options.success);
+        }
+        this.get('ds').add(object.constructor, this.toJSON(object), successCallbacks);
 		return object;
 	},
 	
@@ -53,15 +59,13 @@ Syrah.Store = Ember.Object.extend({
 		return this.get('marshaller').unmarshall(json, object);
 	},
 	
-	didAddObject: function(object, id, hash) {
-		// If the DS has not provided an ID, it must be provided in the returned hash
-		if (id === null) {
-			var pk = object.hasOwnProperty('getPrimaryKey') ? object.getPrimaryKey() : 'id';
-			if (hash[pk] === undefined) {
-				throw "The DataSource has not provided an ID for the newly created object";
-			}
-			id = hash[pk];
-		}
+	didAddObject: function(object, json) {
+		// The DS must provide an ID for the newly created object in the returned JSON
+        var pk = object.hasOwnProperty('getPrimaryKey') ? object.getPrimaryKey() : 'id';
+        if (json[pk] === undefined) {
+            throw "The DataSource has not provided an ID for the newly created object";
+        }
+        id = json[pk];
 		object.set('id', id);
 		return object;
 	},
