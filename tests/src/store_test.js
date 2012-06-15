@@ -109,21 +109,24 @@ test("Store has a didAddObject() callback that sets the object's id when provide
 
 test("Calling Store.update() should invoke his datasource's update()", function() {
 	var ds = Syrah.DataSource.create({
-		update: function(type, object, callback, store) {
+		update: function(type, json, successCallbacks) {
 			ok(true, "DataSource.update() was called");
-			equal(store, currentStore, "DataSource.update() was called with the right store");
-			callback.call(store, object);
+            this.executeCallbacks(successCallbacks, json);
 		}
 	});
 	
 	var currentStore = Syrah.Store.create({ ds: ds });
 	currentStore.reopen({
-		didUpdateObject: function(object, hash) {
+		didUpdateObject: function(object, json) {
 			ok(true, "Store callback didUpdateObject() was called");
-		} 
+		},
+
+        additionalCallback: function(json) {
+            ok(true, "The provided 'success' option callback was called");
+        }
 	});
 	
-	var obj = Foo.Contact.create({ firstname: 'John', lastname: 'Doe' });
+	var obj = Foo.Contact.create({ firstname: 'John', lastname: 'Doe' }, { success: [currentStore.additionalCallback, currentStore] });
 	currentStore.update(obj);
 });
 

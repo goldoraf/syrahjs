@@ -11,8 +11,9 @@ Syrah.Store = Ember.Object.extend({
 	},
 	
 	update: function(object, options) {
-
-        this.get('ds').update(object.constructor, object, this.didUpdateObject, this);
+        var successCallbacks = this.prepareCallbacks([this.didUpdateObject, this, object], options, 'success');
+        var errorCallbacks   = this.prepareCallbacks([this.didError, this, object], options, 'error');
+        this.get('ds').update(object.constructor, this.toJSON(object), successCallbacks, errorCallbacks);
 		return object;
 	},
 	

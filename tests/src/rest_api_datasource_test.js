@@ -19,7 +19,10 @@ module('RESTApiDataSource test', {
 		});
 		
 		window.Foo = Ember.Namespace.create();
-		Foo.Contact = Ember.Object.extend();
+		Foo.Contact = Syrah.Model.define({
+            firstname: String,
+            lastname: String
+        });
 	}
 });
 
@@ -61,8 +64,10 @@ test("Adding an object makes a POST to /contacts", function() {
 });
 
 test("Updating an object makes a PUT to /contacts/[id]", function() {
-	var store = Syrah.Store.create({ds:spiedDS});
-	store.update(Foo.Contact.create({ id: 12345, firstname: 'John', lastname: 'Doe' }));
+	var c = Foo.Contact.create({ firstname: 'John', lastname: 'Doe' });
+    c.set('id', 12345);
+    var store = Syrah.Store.create({ds:spiedDS});
+	store.update(c);
 	
 	expectUrl('/contacts/12345');
 	expectMethod('PUT');

@@ -135,6 +135,12 @@ Syrah.Model.reopen({
     }
 });
 
+Syrah.Model.reopenClass({
+    getPk: function() {
+        return this.__metadata__.primaryKey;
+    }
+});
+
 Syrah.HasMany = Ember.Object.extend({});
 
 Syrah.HasMany.getComputedProperty = function(options) {

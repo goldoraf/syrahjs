@@ -24,6 +24,12 @@ test("A model has an ID getter/setter", function() {
     equal(p.get('id'), 123);
 
     var PersonWithProvidedPK = Syrah.Model.define({ primaryKey: 'PID', name: String });
-    p = Person.create({ id: 456 });
+    p = PersonWithProvidedPK.create();
+    p.set('id', 456);
     equal(p.get('id'), 456);
+});
+
+test("A model class has a getPk() method to retrieve the primaryKey used by this model", function() {
+    var Person = Syrah.Model.define({ primaryKey: 'PID', name: String });
+    equal(Person.getPk(), 'PID');
 });

@@ -8,10 +8,10 @@ module('LocalStorageDataSource test', {
 		ds = Syrah.LocalStorageDataSource.create({ name: 'test' });
 		
 		window.Foo = Ember.Namespace.create();
-		Foo.Contact = Ember.Object.extend({
-			firstname: null,
-			lastname: null,
-		});
+        Foo.Contact = Syrah.Model.define({
+            firstname: String,
+            lastname: String
+        });
 	}
 });
 
@@ -38,7 +38,7 @@ test("LocalStorage DS can be used to retrieve an entire collection", function() 
 	var store = Syrah.Store.create({ds:ds});
 	var collection = store.all(Foo.Contact);
 	
-	//equal(collection.length, 2);
+	equal(collection.get('length'), 2);
 	equal(collection.objectAt(0).get('firstname'), 'John');
 	equal(collection.objectAt(1).get('firstname'), 'Jane');
 });
@@ -57,12 +57,13 @@ test("LocalStorage DS can persist an object", function() {
 });
 
 test("LocalStorage DS can update an object", function() {
-	var obi = Foo.Contact.create({ id: '12345', firstname: 'Obi-Wan', lastname: 'Kenobi' });
+	var obi = Foo.Contact.create({ firstname: 'Obi-Wan', lastname: 'Kenobi' });
+    obi.set('id', '12345');
 	var store = Syrah.Store.create({
 		ds:ds,
 		didUpdateObject: function(object) {
 			equal(localStorage.getItem('test:contacts'), '12345,67890');
-			equal(localStorage.getItem('test:contacts:12345'), JSON.stringify({ id: '12345', firstname: 'Obi-Wan', lastname: 'Kenobi' }));
+			deepEqual(JSON.parse(localStorage.getItem('test:contacts:12345')), { id: '12345', firstname: 'Obi-Wan', lastname: 'Kenobi' });
 		}
 	});
 	
