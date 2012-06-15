@@ -115,3 +115,33 @@ asyncTest("RESTApi DS ajax() method should call provided callbacks in case of su
     });
     mockedDS.ajax('/contacts', 'GET', {}, [[mockedDS.dummySuccessCallback, mockedDS]]);
 });
+
+asyncTest("RESTApi DS has a isRequestSuccessful() method on which depends which callbacks will be called", function() {
+    mockedDS.reopen({
+        dummySuccessCallback: function() {
+            ok(true, "The provided success callback was called");
+            start();
+        },
+
+        isRequestSuccessful: function() {
+            ok(true, "The isRequestSuccessful() method was called");
+            return true;
+        }
+    });
+    mockedDS.ajax('/contacts', 'GET', {}, [[mockedDS.dummySuccessCallback, mockedDS]]);
+});
+
+asyncTest("RESTApi DS has a isRequestSuccessful() method on which depends which callbacks will be called - simulation of an error case", function() {
+    mockedDS.reopen({
+        dummyErrorCallback: function() {
+            ok(true, "The provided error callback was called");
+            start();
+        },
+
+        isRequestSuccessful: function() {
+            ok(true, "The isRequestSuccessful() method was called");
+            return false;
+        }
+    });
+    mockedDS.ajax('/contacts', 'GET', {}, [[mockedDS.dummySuccessCallback, mockedDS]], [[mockedDS.dummyErrorCallback, mockedDS]]);
+});
