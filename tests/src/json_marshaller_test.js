@@ -55,8 +55,9 @@ test("Simple model marshalling", function() {
         name: String,
         dob: Date
     });
-    var c = Contact.create({ name: 'John Doe', dob: new Date(1969, 6, 21) });
-    deepEqual(marshaller.marshall(c), { name: 'John Doe', dob: '1969-07-20T23:00:00.000Z' }, "Dates should be properly formatted");
+    var dob = new Date(1969, 6, 21);
+    var c = Contact.create({ name: 'John Doe', dob: dob });
+    deepEqual(marshaller.marshall(c), { name: 'John Doe', dob: dob.toISOString() }, "Dates should be properly formatted");
 
 });
 
@@ -77,8 +78,9 @@ test("Simple model unmarshalling", function() {
         name: String,
         dob: Date
     });
-    var loadedContact = marshaller.unmarshall({ name: 'John Doe', dob: '1969-07-20T23:00:00.000Z' }, Contact.create());
-    deepEqual(loadedContact.get('dob'), new Date(1969, 6, 21), "Dates can be unmarshalled");
+    var dob = new Date(1969, 6, 21);
+    var loadedContact = marshaller.unmarshall({ name: 'John Doe', dob: dob.toISOString() }, Contact.create());
+    deepEqual(loadedContact.get('dob'), dob, "Dates can be unmarshalled");
 });
 
 test("Model with HasMany association (un)marshalling", function() {
