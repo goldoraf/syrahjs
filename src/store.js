@@ -17,8 +17,10 @@ Syrah.Store = Ember.Object.extend({
 		return object;
 	},
 	
-	destroy: function(object) {
-		this.get('ds').destroy(object.constructor, object, this.didDestroyObject, this);
+	destroy: function(object, options) {
+        var successCallbacks = this.prepareCallbacks([this.didDestroyObject, this, object], options, 'success');
+        var errorCallbacks   = this.prepareCallbacks([this.didError, this, object], options, 'error');
+		this.get('ds').destroy(object.constructor, this.toJSON(object), successCallbacks, errorCallbacks);
 		return;
 	},
 	

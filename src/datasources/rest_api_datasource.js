@@ -41,13 +41,9 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
 		}, successCallbacks, errorCallbacks);
 	},
 	
-	destroy: function(type, object, callback, store) {
-		var id = object.get('id');
-		this.ajax(this.buildUrl(type) + '/' + id, 'DELETE', {
-			success: function(json) {
-				callback.call(store, object);
-			}
-		});
+	destroy: function(type, json, successCallbacks, errorCallbacks) {
+        var id = json[type.getPk()];
+		this.ajax(this.buildUrl(type) + '/' + id, 'DELETE', {}, successCallbacks, errorCallbacks);
 	},
 	
 	ajax: function(url, method, options, successCallbacks, errorCallbacks) {

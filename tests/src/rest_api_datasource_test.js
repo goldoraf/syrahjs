@@ -85,8 +85,10 @@ test("Data can be urlecoded too", function() {
 });
 
 test("Destroying an object makes a DELETE to /contacts/[id]", function() {
-	var store = Syrah.Store.create({ds:spiedDS});
-	store.destroy(Foo.Contact.create({ id: 12345, firstname: 'John', lastname: 'Doe' }));
+    var c = Foo.Contact.create({ firstname: 'John', lastname: 'Doe' });
+    c.set('id', 12345);
+    var store = Syrah.Store.create({ds:spiedDS});
+	store.destroy(c);
 	
 	expectUrl('/contacts/12345');
 	expectMethod('DELETE');

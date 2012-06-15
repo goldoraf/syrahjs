@@ -126,16 +126,15 @@ test("Calling Store.update() should invoke his datasource's update()", function(
         }
 	});
 	
-	var obj = Foo.Contact.create({ firstname: 'John', lastname: 'Doe' }, { success: [currentStore.additionalCallback, currentStore] });
-	currentStore.update(obj);
+	var obj = Foo.Contact.create({ firstname: 'John', lastname: 'Doe' });
+	currentStore.update(obj, { success: [currentStore.additionalCallback, currentStore] });
 });
 
 test("Calling Store.destroy() should invoke his datasource's destroy()", function() {
 	var ds = Syrah.DataSource.create({
-		destroy: function(type, object, callback, store) {
+		destroy: function(type, json, successCallbacks) {
 			ok(true, "DataSource.destroy() was called");
-			equal(store, currentStore, "DataSource.destroy() was called with the right store");
-			callback.call(store, object);
+            this.executeCallbacks(successCallbacks, json);
 		}
 	});
 	
@@ -143,11 +142,15 @@ test("Calling Store.destroy() should invoke his datasource's destroy()", functio
 	currentStore.reopen({
 		didDestroyObject: function(object) {
 			ok(true, "Store callback didDestroyObject() was called");
-		} 
+		},
+
+        additionalCallback: function(json) {
+            ok(true, "The provided 'success' option callback was called");
+        }
 	});
 	
 	var obj = Foo.Contact.create({ firstname: 'John', lastname: 'Doe' });
-	currentStore.destroy(obj);
+	currentStore.destroy(obj, { success: [currentStore.additionalCallback, currentStore] });
 });
 
 test("Store has a didDestroyObject() that destroys the object", function() {

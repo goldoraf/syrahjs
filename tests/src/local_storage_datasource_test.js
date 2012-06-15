@@ -71,7 +71,8 @@ test("LocalStorage DS can update an object", function() {
 });
 
 test("LocalStorage DS can destroy an object", function() {
-	var obi = Foo.Contact.create({ id: '12345', firstname: 'Obi-Wan', lastname: 'Kenobi' });
+    var obi = Foo.Contact.create({ firstname: 'Obi-Wan', lastname: 'Kenobi' });
+    obi.set('id', '12345');
 	var store = Syrah.Store.create({
 		ds:ds,
 		didDestroyObject: function(object) {

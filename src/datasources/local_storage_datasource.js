@@ -59,15 +59,15 @@ Syrah.LocalStorageDataSource = Syrah.DataSource.extend({
         this.executeCallbacks(successCallbacks, json);
 	},
 	
-	destroy: function(type, object, callback, store) {
+	destroy: function(type, json, successCallbacks, errorCallbacks) {
 		var collectionName = this.getCollectionName(type);
 		var keys = this.keys(collectionName);
-		var objectKey = object.get('id');
+        var objectKey = json[type.getPk()];
 		keys.removeAt(keys.indexOf(objectKey));
 		this.persistKeys(collectionName, keys);
 		
 		this.get('storage').removeItem(this.get('name') + ':' + collectionName + ':' + objectKey);
-		callback.call(store, object);
+        this.executeCallbacks(successCallbacks, json);
 	},
 	
 	persistObject: function(collectionName, objectKey, data) {
