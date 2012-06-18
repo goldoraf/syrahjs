@@ -63,7 +63,7 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
                 if (this.isRequestSuccessful(json, textStatus, xhr)) {
                     this.executeCallbacks(successCallbacks, this.parseResponseData(json));
                 } else {
-                    this.executeCallbacks(errorCallbacks, {}, xhr); // TODO : pass a real exception
+                    this.executeCallbacks(errorCallbacks, {}, this.parseErrorResponse(xhr.responseText), xhr); // TODO : pass a real exception
                 }
             };
         }
@@ -113,5 +113,9 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
 
     parseResponseData: function(json) {
         return json;
+    },
+
+    parseErrorResponse: function(responseText) {
+        return JSON.parse(responseText);
     }
 });
