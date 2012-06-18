@@ -4,7 +4,7 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
     urlEncodeData: false,
 	
 	all: function(type, collection, callback, store) {
-		this.ajax(this.buildUrl(type), 'GET', {
+		this.ajax(type, this.buildUrl(type), 'GET', {
 			success: function(json) {
 				callback.call(store, type, collection, json);
 			}
@@ -12,7 +12,7 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
 	},
 
     find: function(type, collection, query, callback, store) {
-        this.ajax(this.buildUrl(type), 'GET', {
+        this.ajax(type, this.buildUrl(type), 'GET', {
             data: query,
             success: function(json) {
                 callback.call(store, type, collection, json);
@@ -21,7 +21,7 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
     },
 	
 	findById: function(type, object, id, callback, store) {
-		this.ajax(this.buildUrl(type) + '/' + id, 'GET', {
+		this.ajax(type, this.buildUrl(type) + '/' + id, 'GET', {
 			success: function(json) {
 				callback.call(store, object, json);
 			}
@@ -29,24 +29,24 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
 	},
 	
 	add: function(type, json, successCallbacks, errorCallbacks) {
-		this.ajax(this.buildUrl(type), 'POST', {
+		this.ajax(type, this.buildUrl(type), 'POST', {
 			data: this.encodePayload(type, json)
 		}, successCallbacks, errorCallbacks);
 	},
 	
 	update: function(type, json, successCallbacks, errorCallbacks) {
 		var id = json[type.getPk()];
-		this.ajax(this.buildUrl(type) + '/' + id, 'PUT', {
+		this.ajax(type, this.buildUrl(type) + '/' + id, 'PUT', {
 			data: this.encodePayload(type, json)
 		}, successCallbacks, errorCallbacks);
 	},
 	
 	destroy: function(type, json, successCallbacks, errorCallbacks) {
         var id = json[type.getPk()];
-		this.ajax(this.buildUrl(type) + '/' + id, 'DELETE', {}, successCallbacks, errorCallbacks);
+		this.ajax(type, this.buildUrl(type) + '/' + id, 'DELETE', {}, successCallbacks, errorCallbacks);
 	},
 	
-	ajax: function(url, method, options, successCallbacks, errorCallbacks) {
+	ajax: function(type, url, method, options, successCallbacks, errorCallbacks) {
 		options.url = url,
 		options.type = method,
 		options.dataType = 'json';
@@ -61,7 +61,7 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
         if (options.success === undefined && successCallbacks !== undefined) {
             options.success = function(json, textStatus, xhr) {
                 if (this.isRequestSuccessful(json, textStatus, xhr)) {
-                    this.executeCallbacks(successCallbacks, this.parseResponseData(json));
+                    this.executeCallbacks(successCallbacks, this.parseResponseData(json, type));
                 } else {
                     this.executeCallbacks(errorCallbacks, {}, this.parseErrorResponse(xhr.responseText), xhr); // TODO : pass a real exception
                 }
@@ -111,7 +111,7 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
         return true;
     },
 
-    parseResponseData: function(json) {
+    parseResponseData: function(json, type) {
         return json;
     },
 

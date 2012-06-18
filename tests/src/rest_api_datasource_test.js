@@ -11,7 +11,7 @@ module('RESTApiDataSource test', {
 		mockedDS = Syrah.RESTApiDataSource.create({});
 		
 		spiedDS = Syrah.RESTApiDataSource.create({
-			ajax: function(url, method, options) {
+			ajax: function(type, url, method, options) {
 				ajaxUrl = url;
 				ajaxMethod = method;
 				ajaxData = options.data;
