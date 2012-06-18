@@ -69,7 +69,7 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
         }
         if (options.error === undefined && errorCallbacks !== undefined) {
             options.error = function(xhr, textStatus, errorThrown) {
-                this.executeCallbacks(errorCallbacks, errorThrown, xhr);
+                this.executeCallbacks(errorCallbacks, errorThrown, this.parseErrorResponse(xhr.responseText), xhr);
             };
         }
 
