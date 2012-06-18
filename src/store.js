@@ -2,6 +2,13 @@ Syrah.Store = Ember.Object.extend({
 	
 	ds: null,
 	marshaller: Syrah.JSONMarshaller.create(),
+
+    save: function(object, options) {
+        if (object.isNew()) {
+            return this.add(object, options);
+        }
+        return this.update(object, options);
+    },
 	
 	add: function(object, options) {
         var successCallbacks = this.prepareCallbacks([this.didAddObject, this, object], options, 'success');
