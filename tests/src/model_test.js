@@ -33,3 +33,11 @@ test("A model class has a getPk() method to retrieve the primaryKey used by this
     var Person = Syrah.Model.define({ primaryKey: 'PID', name: String });
     equal(Person.getPk(), 'PID');
 });
+
+test("A model has a isNew() method", function() {
+    var Person = Syrah.Model.define({ name: String });
+    p = Person.create();
+    equal(p.isNew(), true);
+    p.set('id', 123);
+    equal(p.isNew(), false);
+})

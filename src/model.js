@@ -86,6 +86,10 @@ Syrah.Model.reopenClass({
 });
 
 Syrah.Model.reopen({
+    isNew: function() {
+        return this.get('id') === undefined;
+    },
+
     getPrimaryKey: function() {
         return this.getMetadata().primaryKey;
     },
