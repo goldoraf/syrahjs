@@ -19,7 +19,7 @@ var expandPropertyDefinition = function(name, definition) {
     }
     Ember.assert("A property's definition must have a type", definition.type !== undefined);
 
-    if (definition.type.isModel) {
+    if (definition.type.isModel || typeof(definition.type) == 'string') {
         definition.isAssociation = true;
         if (definition.foreignKey === undefined) {
             definition.foreignKey = Syrah.Inflector.getFkForType(definition.type);
