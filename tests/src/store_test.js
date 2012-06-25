@@ -1,10 +1,9 @@
 module('Store tests', {
 	setup: function() {
 		window.Foo = Ember.Namespace.create();
-		Foo.BarTest = Ember.Object.extend();
-		Foo.Contact = Ember.Object.extend({
-			firstname: null,
-			lastname: null,
+		Foo.Contact = Syrah.Model.define({
+			firstname: String,
+			lastname: String
 		});
 	}
 });

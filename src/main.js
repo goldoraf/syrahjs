@@ -2,6 +2,7 @@ require("core");
 require("inflector");
 require("model");
 require("json_marshaller");
+require("bulk");
 require("store");
 require("datasource");
 require("datasources/rest_api_datasource");

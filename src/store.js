@@ -52,6 +52,10 @@ Syrah.Store = Ember.Object.extend({
 		this.get('ds').all(type, collection, this.loadMany, this);
 		return collection;
 	},
+
+    bulk: function() {
+        return Syrah.Bulk.create({ store: this });
+    },
 	
 	loadMany: function(type, collection, data) {
 		var objects = [];
@@ -77,13 +81,29 @@ Syrah.Store = Ember.Object.extend({
 		return object;
 	},
 	
-	didUpdateObject: function(object, hash) {
+	didUpdateObject: function(object, json) {
 		
 	},
 	
 	didDestroyObject: function(object) {
 		object.destroy();
 	},
+
+    didAddObjects: function(objects, json) {
+        json.forEach(function(item, index) {
+            this.didAddObject(objects[index], item);
+        }, this);
+    },
+
+    didUpdateObjects: function(objects, json) {
+
+    },
+
+    didDestroyObjects: function(objects) {
+        objects.forEach(function(object) {
+            this.didDestroyObject(object);
+        }, this);
+    },
 
     didError: function(object, error) {
         // TODO : do something smart here...

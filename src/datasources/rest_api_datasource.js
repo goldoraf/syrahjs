@@ -33,6 +33,12 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
 			data: this.encodePayload(type, json)
 		}, successCallbacks, errorCallbacks);
 	},
+
+    addInBulk: function(type, json, successCallbacks, errorCallbacks) {
+        this.ajax(type, this.buildUrl(type) + '/bulk', 'POST', {
+            data: this.encodeBulkPayload(type, json)
+        }, successCallbacks, errorCallbacks);
+    },
 	
 	update: function(type, json, successCallbacks, errorCallbacks) {
 		var id = json[type.getPk()];
@@ -40,11 +46,23 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
 			data: this.encodePayload(type, json)
 		}, successCallbacks, errorCallbacks);
 	},
+
+    updateInBulk: function(type, json, successCallbacks, errorCallbacks) {
+        this.ajax(type, this.buildUrl(type) + '/bulk', 'PUT', {
+            data: this.encodeBulkPayload(type, json)
+        }, successCallbacks, errorCallbacks);
+    },
 	
 	destroy: function(type, json, successCallbacks, errorCallbacks) {
         var id = json[type.getPk()];
 		this.ajax(type, this.buildUrl(type) + '/' + id, 'DELETE', {}, successCallbacks, errorCallbacks);
 	},
+
+    destroyInBulk: function(type, json, successCallbacks, errorCallbacks) {
+        this.ajax(type, this.buildUrl(type) + '/bulk', 'DELETE', {
+            data: this.encodeBulkPayload(type, json)
+        }, successCallbacks, errorCallbacks);
+    },
 	
 	ajax: function(type, url, method, options, successCallbacks, errorCallbacks) {
 		options.url = url,
@@ -90,14 +108,31 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
         return store.toJSON(object);
     },
 
-    encodePayload: function(type, json) {
+    encodePayload: function(type, json, index) {
         if (this.get('urlEncodeData') !== false) {
             var parts = [];
             var prefix = Syrah.Inflector.getTypeName(type);
+            if (index !== undefined) prefix+= '[' + index + ']';
             for (var k in json) {
                 var value = json[k] === null ? '' : encodeURIComponent(json[k]);
                 parts.push(prefix + '.' + k + '=' + value);
             }
+            return parts.join('&');
+        }
+        return json;
+    },
+
+    encodeBulkPayload: function(type, json) {
+        if (this.get('urlEncodeData') !== false) {
+            var parts = [];
+            json.forEach(function(item, index) {
+                if (Ember.typeOf(item) !== 'instance' && Ember.typeOf(item) !== 'object') {
+                    // it should be IDs for a DELETE then...
+                    parts.push(type.getPk() + '[' + index + ']=' + item);
+                } else {
+                    parts.push(this.encodePayload(type, item, index));
+                }
+            }, this);
             return parts.join('&');
         }
         return json;

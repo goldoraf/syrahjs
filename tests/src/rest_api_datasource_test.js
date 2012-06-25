@@ -74,14 +74,30 @@ test("Updating an object makes a PUT to /contacts/[id]", function() {
 	expectData({ id: 12345, firstname: 'John', lastname: 'Doe' });
 });
 
-test("Data can be urlecoded too", function() {
+test("Data can be urlencoded too", function() {
     spiedDS.set('urlEncodeData', true);
     var store = Syrah.Store.create({ds:spiedDS});
     store.add(Foo.Contact.create({ firstname: 'John', lastname: 'Doe' }));
 
-    expectUrl('/contacts');
-    expectMethod('POST');
     expectData("contact.firstname=John&contact.lastname=Doe");
+
+    var bulk = store.bulk();
+    bulk.save(Foo.Contact.create({ firstname: 'John', lastname: 'Doe' }));
+    bulk.save(Foo.Contact.create({ firstname: 'Jane', lastname: 'Doe' }));
+    bulk.commit();
+
+    expectData("contact[0].firstname=John&contact[0].lastname=Doe&contact[1].firstname=Jane&contact[1].lastname=Doe");
+
+    var bulk = store.bulk();
+    var contact1 = Foo.Contact.create({ firstname: 'John', lastname: 'Doe' });
+    var contact2 = Foo.Contact.create({ firstname: 'Jane', lastname: 'Doe' });
+    contact1.set('id', 12345);
+    contact2.set('id', 67890);
+    bulk.destroy(contact1);
+    bulk.destroy(contact2);
+    bulk.commit();
+
+    expectData("id[0]=12345&id[1]=67890");
 });
 
 test("Destroying an object makes a DELETE to /contacts/[id]", function() {
@@ -92,6 +108,50 @@ test("Destroying an object makes a DELETE to /contacts/[id]", function() {
 	
 	expectUrl('/contacts/12345');
 	expectMethod('DELETE');
+});
+
+test("Adding in bulk objects makes a POST to /contacts/bulk", function() {
+    var store = Syrah.Store.create({ds:spiedDS});
+    var bulk = store.bulk();
+    bulk.save(Foo.Contact.create({ firstname: 'John', lastname: 'Doe' }));
+    bulk.save(Foo.Contact.create({ firstname: 'Jane', lastname: 'Doe' }));
+    bulk.commit();
+
+    expectUrl('/contacts/bulk');
+    expectMethod('POST');
+    expectData([{ firstname: 'John', lastname: 'Doe' }, { firstname: 'Jane', lastname: 'Doe' }]);
+});
+
+test("Updating in bulk objects makes a PUT to /contacts/bulk", function() {
+    var store = Syrah.Store.create({ds:spiedDS});
+    var bulk = store.bulk();
+    var c1 = Foo.Contact.create({ firstname: 'John', lastname: 'Doe' });
+    c1.set('id', 12345);
+    var c2 = Foo.Contact.create({ firstname: 'Jane', lastname: 'Doe' });
+    c2.set('id', 67890);
+    bulk.save(c1);
+    bulk.save(c2);
+    bulk.commit();
+
+    expectUrl('/contacts/bulk');
+    expectMethod('PUT');
+    expectData([{ id: 12345, firstname: 'John', lastname: 'Doe' }, { id: 67890, firstname: 'Jane', lastname: 'Doe' }]);
+});
+
+test("Deleting in bulk objects makes a DELETE to /contacts/bulk", function() {
+    var store = Syrah.Store.create({ds:spiedDS});
+    var bulk = store.bulk();
+    var c1 = Foo.Contact.create({ firstname: 'John', lastname: 'Doe' });
+    c1.set('id', 12345);
+    var c2 = Foo.Contact.create({ firstname: 'Jane', lastname: 'Doe' });
+    c2.set('id', 67890);
+    bulk.destroy(c1);
+    bulk.destroy(c2);
+    bulk.commit();
+
+    expectUrl('/contacts/bulk');
+    expectMethod('DELETE');
+    expectData([12345, 67890]);
 });
 
 test("Setting a base URL", function() {
@@ -114,16 +174,18 @@ asyncTest("RESTApi DS can be used to retrieve an entire collection", function() 
 });
 
 asyncTest("RESTApi DS ajax() method should call provided callbacks in case of success", function() {
+    var mockedDS = Syrah.RESTApiDataSource.create({});
     mockedDS.reopen({
         dummySuccessCallback: function() {
             ok(true, "The provided success callback was called");
             start();
         }
     });
-    mockedDS.ajax('/contacts', 'GET', {}, [[mockedDS.dummySuccessCallback, mockedDS]]);
+    mockedDS.ajax(Foo.Contact, '/contacts', 'GET', {}, [[mockedDS.dummySuccessCallback, mockedDS]]);
 });
 
 asyncTest("RESTApi DS has a isRequestSuccessful() method on which depends which callbacks will be called", function() {
+    var mockedDS = Syrah.RESTApiDataSource.create({});
     mockedDS.reopen({
         dummySuccessCallback: function() {
             ok(true, "The provided success callback was called");
@@ -135,10 +197,11 @@ asyncTest("RESTApi DS has a isRequestSuccessful() method on which depends which 
             return true;
         }
     });
-    mockedDS.ajax('/contacts', 'GET', {}, [[mockedDS.dummySuccessCallback, mockedDS]]);
+    mockedDS.ajax(Foo.Contact, '/contacts', 'GET', {}, [[mockedDS.dummySuccessCallback, mockedDS]]);
 });
 
 asyncTest("RESTApi DS has a isRequestSuccessful() method on which depends which callbacks will be called - simulation of an error case", function() {
+    var mockedDS = Syrah.RESTApiDataSource.create({});
     mockedDS.reopen({
         dummyErrorCallback: function() {
             ok(true, "The provided error callback was called");
@@ -150,5 +213,5 @@ asyncTest("RESTApi DS has a isRequestSuccessful() method on which depends which 
             return false;
         }
     });
-    mockedDS.ajax('/contacts', 'GET', {}, [[mockedDS.dummySuccessCallback, mockedDS]], [[mockedDS.dummyErrorCallback, mockedDS]]);
+    mockedDS.ajax(Foo.Contact, '/contacts', 'GET', {}, [[mockedDS.dummySuccessCallback, mockedDS]], [[mockedDS.dummyErrorCallback, mockedDS]]);
 });
