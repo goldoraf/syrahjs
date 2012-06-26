@@ -141,7 +141,7 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
                     parts.push(type.getPk() + '[' + index + ']=' + item);
                 } else {
                     if (prefix !== undefined) {
-                        parts.push(prefix + '.' + this.encodePayload(type, item, index));
+                        parts.push(this.encodePayload(type, item, index, prefix));
                     } else {
                         parts.push(this.encodePayload(type, item, index));
                     }

@@ -34,7 +34,8 @@ module('RESTApiDataSource test', {
             }
         });
         Foo.Phone = Syrah.Model.define({
-            number: String
+            number: String,
+            type: String
         });
 	}
 });
@@ -102,12 +103,12 @@ test("Data can be urlencoded too", function() {
     expectData("contact[0].firstname=John&contact[0].lastname=Doe&contact[1].firstname=Jane&contact[1].lastname=Doe");
 
     var contact = Foo.Contact.create({ firstname: 'John', lastname: 'Doe' });
-    contact.get('phones').pushObject(Foo.Phone.create({ number: "+12345678" }));
-    contact.get('phones').pushObject(Foo.Phone.create({ number: "+87654321" }));
+    contact.get('phones').pushObject(Foo.Phone.create({ number: "+12345678", type: "mobile" }));
+    contact.get('phones').pushObject(Foo.Phone.create({ number: "+87654321", type: "mobile" }));
     contact.set('addressbook', Foo.Addressbook.create({ name: "My contacts" }));
     store.add(contact, { embedded: ['phones', 'addressbook'] });
 
-    expectData("contact.firstname=John&contact.lastname=Doe&contact.phones[0].number=%2B12345678&contact.phones[1].number=%2B87654321&contact.addressbook.name=My%20contacts");
+    expectData("contact.firstname=John&contact.lastname=Doe&contact.phones[0].number=%2B12345678&contact.phones[0].type=mobile&contact.phones[1].number=%2B87654321&contact.phones[1].type=mobile&contact.addressbook.name=My%20contacts");
 
     var bulk = store.bulk();
     var contact1 = Foo.Contact.create({ firstname: 'John', lastname: 'Doe' });
