@@ -16,7 +16,7 @@ module("JSON Marshaller tests", {
 	}
 });
 
-test("Simple object marshalling", function() {
+/*test("Simple object marshalling", function() {
 	var contact = Foo.Contact.create({ firstname: 'John', lastname: 'Doe' });
 	deepEqual(marshaller.marshall(contact), { firstname: 'John', lastname: 'Doe' });
 });
@@ -38,7 +38,7 @@ test("Simple object with 1-n association unmarshalling", function() {
 	ok(loadedContact.get('phones').objectAt(1) instanceof Foo.Phone);
 	equal(loadedContact.get('phones').objectAt(0).get('number'), '+12345678');
 	equal(loadedContact.get('phones').objectAt(1).get('number'), '+87654321');
-});
+});*/
 
 test("Simple model marshalling", function() {
     var Contact = Syrah.Model.define({

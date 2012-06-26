@@ -1,4 +1,5 @@
 require("core");
+require("compatibility");
 require("inflector");
 require("model");
 require("json_marshaller");
