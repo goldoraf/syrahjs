@@ -71,7 +71,7 @@ test("A model can be duplicated", function() {
     c.get('phones').pushObject(Foo.Phone.create({ number: "+12345678" }));
     c.get('phones').pushObject(Foo.Phone.create({ number: "+87654321" }));
     c.set('addressbook', Foo.Addressbook.create({ name: "My contacts" }));
-    var newContact = c.duplicate(['phones', 'addressbook']);
+    var newContact = c.duplicate({ duplicateAssociations: ['phones', 'addressbook'] });
 
     equal(newContact.get('phones').objectAt(0).constructor, Foo.Phone, "Duplicated HasMany associations of an object should be of the correct type");
     equal(newContact.get('phones').objectAt(0).get('number'), "+12345678", "Duplicated HasMany associations' properties should be correctly duplicated");
