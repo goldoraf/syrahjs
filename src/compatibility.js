@@ -26,7 +26,7 @@ if (!Date.prototype.toISOString) {
          * Released under MIT license.
          */
         var origParse = Date.parse, numericKeys = [ 1, 4, 5, 6, 7, 10, 11 ];
-        Date.parse = function (date) {console.log('test parse');
+        Date.parse = function (date) {
             var timestamp, struct, minutesOffset = 0;
 
             // ES5 §15.9.4.2 states that the string should attempt to be parsed as a Date Time String Format string
