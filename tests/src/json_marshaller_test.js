@@ -87,6 +87,10 @@ test("Model with HasMany association (un)marshalling", function() {
 
     var generatedJson = marshaller.marshall(loadedContact);
     ok(!generatedJson.hasOwnProperty('phones'), "HasMany associations should not be marshalled by default");
+
+    var generatedJson = marshaller.marshall(loadedContact, { embedded: ['phones'] });
+    ok(generatedJson.hasOwnProperty('phones'), "HasMany associations can be marshalled when using the 'embedded' option");
+    deepEqual(generatedJson, json);
 });
 
 test("Model with BelongsTo association (un)marshalling", function() {

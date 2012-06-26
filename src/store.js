@@ -13,21 +13,21 @@ Syrah.Store = Ember.Object.extend({
 	add: function(object, options) {
         var successCallbacks = this.prepareCallbacks([this.didAddObject, this, object], options, 'success');
         var errorCallbacks   = this.prepareCallbacks([this.didError, this, object], options, 'error');
-        this.get('ds').add(object.constructor, this.toJSON(object), successCallbacks, errorCallbacks);
+        this.get('ds').add(object.constructor, this.toJSON(object, options), successCallbacks, errorCallbacks);
 		return object;
 	},
 	
 	update: function(object, options) {
         var successCallbacks = this.prepareCallbacks([this.didUpdateObject, this, object], options, 'success');
         var errorCallbacks   = this.prepareCallbacks([this.didError, this, object], options, 'error');
-        this.get('ds').update(object.constructor, this.toJSON(object), successCallbacks, errorCallbacks);
+        this.get('ds').update(object.constructor, this.toJSON(object, options), successCallbacks, errorCallbacks);
 		return object;
 	},
 	
 	destroy: function(object, options) {
         var successCallbacks = this.prepareCallbacks([this.didDestroyObject, this, object], options, 'success');
         var errorCallbacks   = this.prepareCallbacks([this.didError, this, object], options, 'error');
-		this.get('ds').destroy(object.constructor, this.toJSON(object), successCallbacks, errorCallbacks);
+		this.get('ds').destroy(object.constructor, this.toJSON(object, options), successCallbacks, errorCallbacks);
 		return;
 	},
 	
@@ -109,8 +109,8 @@ Syrah.Store = Ember.Object.extend({
         // TODO : do something smart here...
     },
 	
-	toJSON: function(object) {
-		return this.get('marshaller').marshall(object);
+	toJSON: function(object, options) {
+		return this.get('marshaller').marshall(object, options);
 	},
 
     prepareCallbacks: function(firstCallback, options, optionKey) {

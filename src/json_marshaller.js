@@ -1,7 +1,8 @@
 Syrah.JSONMarshaller = Ember.Object.extend({
 	
-	marshall: function(object) {
-		if (object instanceof Syrah.Model) return this.marshallModel(object);
+	marshall: function(object, options) {
+		var options = options || {};
+        if (object instanceof Syrah.Model) return this.marshallModel(object, options.embedded);
         return this.marshallSimpleObject(object);
 	},
 
@@ -22,6 +23,24 @@ Syrah.JSONMarshaller = Ember.Object.extend({
             var typecast = Syrah.typecastFor(type);
             if (typecast !== undefined) {
                 data[propName] = typecast.toJson(data[propName]);
+            }
+        }
+
+        var assocData = object.getProperties(embeddedAssocs);
+        for (var propName in assocData) {
+            var propDef = definedProps[propName];
+            if (propDef.isAssociation !== true) {
+                Ember.warn("'Embedded' option should only be used with associations");
+                continue;
+            }
+            if (propDef.type === Syrah.HasMany) {
+                var value = [];
+                assocData[propName].get('content').forEach(function(item) {
+                    value.push(this.marshallModel(item));
+                }, this);
+                data[propName] = value;
+            } else {
+                data[propName] = this.marshallModel(assocData[propName]);
             }
         }
 

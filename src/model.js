@@ -174,7 +174,10 @@ Syrah.HasManyCollection = Syrah.ModelCollection.extend({
         if (fk === null) {
             fk = Syrah.Inflector.getFkForType(this.get('parentObject').constructor);
         }
-        object.setDbRef(fk, this.get('parentObject').get('id'));
+        var parentId = this.get('parentObject').get('id');
+        if (!Ember.none(parentId)) {
+            object.setDbRef(fk, parentId);
+        }
         this._super(object);
     }
 });
