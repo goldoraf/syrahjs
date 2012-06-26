@@ -25,8 +25,14 @@ var expandPropertyDefinition = function(name, definition) {
             definition.foreignKey = Syrah.Inflector.getFkForType(definition.type);
         }
         definition.observer = function() {
-            if (this.get(name) === null) this.setDbRef(definition.foreignKey, null);
-            else this.setDbRef(definition.foreignKey, this.get(name).get('id'));
+            if (this.get(name) === null) {
+                this.setDbRef(definition.foreignKey, null);
+            } else {
+                var objectId = this.get(name).get('id');
+                if (!Ember.none(objectId)) {
+                    this.setDbRef(definition.foreignKey, objectId);
+                }
+            }
         }
     }
 

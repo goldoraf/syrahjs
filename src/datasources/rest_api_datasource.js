@@ -108,21 +108,31 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
         return store.toJSON(object);
     },
 
-    encodePayload: function(type, json, index) {
+    encodePayload: function(type, json, index, prefix) {
         if (this.get('urlEncodeData') !== false) {
             var parts = [];
-            var prefix = Syrah.Inflector.getTypeName(type);
+
+            if (prefix !== undefined) prefix += '.';
+            else prefix = '';
+            prefix += Syrah.Inflector.getTypeName(type);
+
             if (index !== undefined) prefix+= '[' + index + ']';
             for (var k in json) {
-                var value = json[k] === null ? '' : encodeURIComponent(json[k]);
-                parts.push(prefix + '.' + k + '=' + value);
+                if (Ember.typeOf(json[k]) === 'array') {
+                    parts.push(this.encodeBulkPayload(k, json[k], prefix));
+                } else if (Ember.typeOf(json[k]) === 'object') {
+                    parts.push(this.encodePayload(k, json[k], undefined, prefix));
+                } else {
+                    var value = json[k] === null ? '' : encodeURIComponent(json[k]);
+                    parts.push(prefix + '.' + k + '=' + value);
+                }
             }
             return parts.join('&');
         }
         return json;
     },
 
-    encodeBulkPayload: function(type, json) {
+    encodeBulkPayload: function(type, json, prefix) {
         if (this.get('urlEncodeData') !== false) {
             var parts = [];
             json.forEach(function(item, index) {
@@ -130,7 +140,11 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
                     // it should be IDs for a DELETE then...
                     parts.push(type.getPk() + '[' + index + ']=' + item);
                 } else {
-                    parts.push(this.encodePayload(type, item, index));
+                    if (prefix !== undefined) {
+                        parts.push(prefix + '.' + this.encodePayload(type, item, index));
+                    } else {
+                        parts.push(this.encodePayload(type, item, index));
+                    }
                 }
             }, this);
             return parts.join('&');

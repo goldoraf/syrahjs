@@ -19,9 +19,22 @@ module('RESTApiDataSource test', {
 		});
 		
 		window.Foo = Ember.Namespace.create();
+        Foo.Addressbook = Syrah.Model.define({
+            name: String
+        });
 		Foo.Contact = Syrah.Model.define({
             firstname: String,
-            lastname: String
+            lastname: String,
+            addressbook: {
+                type: "Foo.Addressbook"
+            },
+            phones: {
+                type: Syrah.HasMany,
+                itemType: "Foo.Phone"
+            }
+        });
+        Foo.Phone = Syrah.Model.define({
+            number: String
         });
 	}
 });
@@ -87,6 +100,14 @@ test("Data can be urlencoded too", function() {
     bulk.commit();
 
     expectData("contact[0].firstname=John&contact[0].lastname=Doe&contact[1].firstname=Jane&contact[1].lastname=Doe");
+
+    var contact = Foo.Contact.create({ firstname: 'John', lastname: 'Doe' });
+    contact.get('phones').pushObject(Foo.Phone.create({ number: "+12345678" }));
+    contact.get('phones').pushObject(Foo.Phone.create({ number: "+87654321" }));
+    contact.set('addressbook', Foo.Addressbook.create({ name: "My contacts" }));
+    store.add(contact, { embedded: ['phones', 'addressbook'] });
+
+    expectData("contact.firstname=John&contact.lastname=Doe&contact.phones[0].number=%2B12345678&contact.phones[1].number=%2B87654321&contact.addressbook.name=My%20contacts");
 
     var bulk = store.bulk();
     var contact1 = Foo.Contact.create({ firstname: 'John', lastname: 'Doe' });
