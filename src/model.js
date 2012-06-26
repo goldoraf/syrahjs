@@ -92,6 +92,38 @@ Syrah.Model.reopenClass({
 });
 
 Syrah.Model.reopen({
+    duplicate: function(includeAssocs) {
+        includeAssocs = includeAssocs || [];
+
+        var newInstance = this.constructor.create({});
+        var data = {};
+
+        //newInstance.beginPropertyChanges();
+
+        var primitiveProps = this.getPrimitiveProperties();
+        primitiveProps.forEach(function(propName) {
+            data[propName] = this.get(propName);
+        }, this);
+
+        newInstance.setProperties(data);
+
+        var assocs = this.getAssociations();
+        for (var assocName in assocs) {
+            if (includeAssocs.indexOf(assocName) === -1) continue;
+            var assoc = assocs[assocName];
+            if (assoc.type === Syrah.HasMany) {
+                this.get(assocName).forEach(function(item) {
+                    newInstance.get(assocName).pushObject(item.duplicate(includeAssocs));
+                });
+            } else {
+                newInstance.set(assocName, this.get(assocName).duplicate(includeAssocs));
+            }
+        }
+
+        //newInstance.endPropertyChanges();
+        return newInstance;
+    },
+
     isNew: function() {
         return this.get('id') === undefined;
     },

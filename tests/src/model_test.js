@@ -1,6 +1,23 @@
 module('Model definition test', {
 	setup: function() {
-
+        window.Foo = Ember.Namespace.create();
+        Foo.Addressbook = Syrah.Model.define({
+            name: String
+        });
+        Foo.Contact = Syrah.Model.define({
+            firstname: String,
+            lastname: String,
+            addressbook: {
+                type: "Foo.Addressbook"
+            },
+            phones: {
+                type: Syrah.HasMany,
+                itemType: "Foo.Phone"
+            }
+        });
+        Foo.Phone = Syrah.Model.define({
+            number: String
+        });
 	}
 });
 
@@ -40,4 +57,25 @@ test("A model has a isNew() method", function() {
     equal(p.isNew(), true);
     p.set('id', 123);
     equal(p.isNew(), false);
-})
+});
+
+test("A model can be duplicated", function() {
+    var c = Foo.Contact.create({ firstname: 'John', lastname: 'Doe' });
+    c.set('id', 12345);
+    var newContact = c.duplicate();
+
+    equal(newContact.constructor, Foo.Contact, "The duplicated object should be of the same type");
+    equal(newContact.get('id'), undefined, "The original object's ID should not be duplicated");
+    equal(newContact.get('firstname'), 'John', "The original object's primitive properties should be duplicated");
+
+    c.get('phones').pushObject(Foo.Phone.create({ number: "+12345678" }));
+    c.get('phones').pushObject(Foo.Phone.create({ number: "+87654321" }));
+    c.set('addressbook', Foo.Addressbook.create({ name: "My contacts" }));
+    var newContact = c.duplicate(['phones', 'addressbook']);
+
+    equal(newContact.get('phones').objectAt(0).constructor, Foo.Phone, "Duplicated HasMany associations of an object should be of the correct type");
+    equal(newContact.get('phones').objectAt(0).get('number'), "+12345678", "Duplicated HasMany associations' properties should be correctly duplicated");
+
+    equal(newContact.get('addressbook').constructor, Foo.Addressbook, "Duplicated associations of an object should be of the correct type");
+    equal(newContact.get('addressbook').get('name'), "My contacts", "Duplicated associations' properties should be correctly duplicated");
+});
