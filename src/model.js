@@ -109,21 +109,36 @@ Syrah.Model.reopen({
 
         newInstance.setProperties(data);
 
+        var filterSubAssocs = function(assocs, parentAssocName) {
+            var subAssocs = [];
+            var re = new RegExp('^' + parentAssocName + "\.");
+            assocs.forEach(function(item) {
+                if (item.match(re)) {
+                    subAssocs.push(item.replace(re, ''));
+                }
+            });
+            return subAssocs;
+        }
+
         var assocs = this.getAssociations();
         for (var assocName in assocs) {
             if (duplicateAssocs.indexOf(assocName) === -1 && includeAssocs.indexOf(assocName) === -1) continue;
             var assoc = assocs[assocName];
+            var subOptions = {
+                duplicateAssociations: filterSubAssocs(duplicateAssocs, assocName),
+                includeAssociations: filterSubAssocs(includeAssocs, assocName)
+            };
             if (assoc.type === Syrah.HasMany) {
                 this.get(assocName).forEach(function(item) {
                     if (duplicateAssocs.indexOf(assocName) !== -1) {
-                        newInstance.get(assocName).pushObject(item.duplicate(duplicateAssocs));
+                        newInstance.get(assocName).pushObject(item.duplicate(subOptions));
                     } else if (includeAssocs.indexOf(assocName) !== -1) {
                         newInstance.get(assocName).pushObject(item);
                     }
                 });
             } else {
                 if (duplicateAssocs.indexOf(assocName) !== -1) {
-                    newInstance.set(assocName, this.get(assocName).duplicate(duplicateAssocs));
+                    newInstance.set(assocName, this.get(assocName).duplicate(subOptions));
                 } else if (includeAssocs.indexOf(assocName) !== -1) {
                     newInstance.set(assocName, this.get(assocName));
                 }

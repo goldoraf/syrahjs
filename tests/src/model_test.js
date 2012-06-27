@@ -2,7 +2,11 @@ module('Model definition test', {
 	setup: function() {
         window.Foo = Ember.Namespace.create();
         Foo.Addressbook = Syrah.Model.define({
-            name: String
+            name: String,
+            contacts: {
+                type: Syrah.HasMany,
+                itemType: "Foo.Contact"
+            }
         });
         Foo.Contact = Syrah.Model.define({
             firstname: String,
@@ -70,7 +74,8 @@ test("A model can be duplicated", function() {
 
     c.get('phones').pushObject(Foo.Phone.create({ number: "+12345678" }));
     c.get('phones').pushObject(Foo.Phone.create({ number: "+87654321" }));
-    c.set('addressbook', Foo.Addressbook.create({ name: "My contacts" }));
+    var ab = Foo.Addressbook.create({ name: "My contacts" });
+    c.set('addressbook', ab);
     var newContact = c.duplicate({ duplicateAssociations: ['phones', 'addressbook'] });
 
     equal(newContact.get('phones').objectAt(0).constructor, Foo.Phone, "Duplicated HasMany associations of an object should be of the correct type");
@@ -78,4 +83,10 @@ test("A model can be duplicated", function() {
 
     equal(newContact.get('addressbook').constructor, Foo.Addressbook, "Duplicated associations of an object should be of the correct type");
     equal(newContact.get('addressbook').get('name'), "My contacts", "Duplicated associations' properties should be correctly duplicated");
+
+    ab.get('contacts').pushObject(c);
+    var newAb = ab.duplicate({ duplicateAssociations: ['contacts', 'contacts.phones'] });
+
+    equal(newAb.get('contacts').objectAt(0).get('phones').objectAt(0).constructor, Foo.Phone, "Duplicated HasMany sub-associations of an object should be of the correct type");
+    equal(newAb.get('contacts').objectAt(0).get('phones').objectAt(0).get('number'), "+12345678", "Duplicated HasMany sub-associations' properties should be correctly duplicated");
 });

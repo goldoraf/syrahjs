@@ -20,7 +20,11 @@ module('RESTApiDataSource test', {
 		
 		window.Foo = Ember.Namespace.create();
         Foo.Addressbook = Syrah.Model.define({
-            name: String
+            name: String,
+            contacts: {
+                type: Syrah.HasMany,
+                itemType: "Foo.Contact"
+            }
         });
 		Foo.Contact = Syrah.Model.define({
             firstname: String,
@@ -105,10 +109,16 @@ test("Data can be urlencoded too", function() {
     var contact = Foo.Contact.create({ firstname: 'John', lastname: 'Doe' });
     contact.get('phones').pushObject(Foo.Phone.create({ number: "+12345678", type: "mobile" }));
     contact.get('phones').pushObject(Foo.Phone.create({ number: "+87654321", type: "mobile" }));
-    contact.set('addressbook', Foo.Addressbook.create({ name: "My contacts" }));
+    var ab = Foo.Addressbook.create({ name: "My contacts" });
+    contact.set('addressbook', ab);
     store.add(contact, { embedded: ['phones', 'addressbook'] });
 
     expectData("contact.firstname=John&contact.lastname=Doe&contact.addressbook.name=My%20contacts&contact.phones[0].number=%2B12345678&contact.phones[0].type=mobile&contact.phones[1].number=%2B87654321&contact.phones[1].type=mobile");
+
+    ab.get('contacts').pushObject(contact);
+    store.add(ab, { embedded: ['contacts', 'contacts.phones'] });
+
+    expectData("addressbook.name=My%20contacts&addressbook.contacts[0].firstname=John&addressbook.contacts[0].lastname=Doe&addressbook.contacts[0].phones[0].number=%2B12345678&addressbook.contacts[0].phones[0].type=mobile&addressbook.contacts[0].phones[1].number=%2B87654321&addressbook.contacts[0].phones[1].type=mobile");
 
     var bulk = store.bulk();
     var contact1 = Foo.Contact.create({ firstname: 'John', lastname: 'Doe' });
