@@ -1,10 +1,28 @@
 module('Store tests', {
 	setup: function() {
 		window.Foo = Ember.Namespace.create();
-		Foo.Contact = Syrah.Model.define({
-			firstname: String,
-			lastname: String
-		});
+        Foo.Addressbook = Syrah.Model.define({
+            name: String,
+            contacts: {
+                type: Syrah.HasMany,
+                itemType: "Foo.Contact"
+            }
+        });
+        Foo.Contact = Syrah.Model.define({
+            firstname: String,
+            lastname: String,
+            addressbook: {
+                type: "Foo.Addressbook"
+            },
+            phones: {
+                type: Syrah.HasMany,
+                itemType: "Foo.Phone"
+            }
+        });
+        Foo.Phone = Syrah.Model.define({
+            number: String,
+            type: String
+        });
 	}
 });
 
@@ -85,7 +103,7 @@ test("Calling Store.add() should invoke his datasource's add()", function() {
 	
 	var currentStore = Syrah.Store.create({ ds: ds });
 	currentStore.reopen({
-		didAddObject: function(object, json) {
+		didAddObject: function(object, embedded, json) {
 			ok(true, "Store callback didAddObject() was called");
 			deepEqual(json, { firstname: 'John', lastname: 'Doe' }, "Store callback didAddObject() was passed the JSON");
 		},
@@ -102,8 +120,28 @@ test("Store has a didAddObject() callback that sets the object's id when provide
 	var store = Syrah.Store.create();
 	var contact = Foo.Contact.create({ firstname: 'John', lastname: 'Doe' });
 	
-	store.didAddObject(contact, { id: 12345 });
+	store.didAddObject(contact, [], { id: 12345 });
 	equal(contact.get('id'), 12345);
+});
+
+test("Store has a didAddObject() callback that sets all of an object graph's IDs when the 'embedded' option is used", function() {
+    var store = Syrah.Store.create();
+    var ab = Foo.Addressbook.create({ name: "My contacts" });
+    var contact1 = Foo.Contact.create({ firstname: 'John', lastname: 'Doe' });
+    var phone1 = Foo.Phone.create({ number: "+12345678", type: "mobile" });
+    contact1.get('phones').pushObject(phone1);
+    var contact2 = Foo.Contact.create({ firstname: 'Jane', lastname: 'Doe' });
+    var phone2 = Foo.Phone.create({ number: "+87654321", type: "mobile" });
+    contact2.get('phones').pushObject(phone2);
+    ab.get('contacts').pushObject(contact1);
+    ab.get('contacts').pushObject(contact2);
+
+    store.didAddObject(ab, ['contacts', 'contacts.phones'], { id: 12345, contacts: [{ id: 123, phones: [{ id: 789 }] }, { id: 456, phones: [{ id: 234 }] }] });
+    equal(ab.get('id'), 12345);
+    equal(contact1.get('id'), 123);
+    equal(contact2.get('id'), 456);
+    equal(phone1.get('id'), 789);
+    equal(phone2.get('id'), 234);
 });
 
 test("Calling Store.update() should invoke his datasource's update()", function() {

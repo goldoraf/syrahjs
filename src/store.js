@@ -11,13 +11,16 @@ Syrah.Store = Ember.Object.extend({
     },
 	
 	add: function(object, options) {
-        var successCallbacks = this.prepareCallbacks([this.didAddObject, this, object], options, 'success');
+        options = options || {};
+        var embedded = options.embedded || [];
+        var successCallbacks = this.prepareCallbacks([this.didAddObject, this, object, embedded], options, 'success');
         var errorCallbacks   = this.prepareCallbacks([this.didError, this, object], options, 'error');
         this.get('ds').add(object.constructor, this.toJSON(object, options), successCallbacks, errorCallbacks);
 		return object;
 	},
 	
 	update: function(object, options) {
+        options = options || {};
         var successCallbacks = this.prepareCallbacks([this.didUpdateObject, this, object], options, 'success');
         var errorCallbacks   = this.prepareCallbacks([this.didError, this, object], options, 'error');
         this.get('ds').update(object.constructor, this.toJSON(object, options), successCallbacks, errorCallbacks);
@@ -25,6 +28,7 @@ Syrah.Store = Ember.Object.extend({
 	},
 	
 	destroy: function(object, options) {
+        options = options || {};
         var successCallbacks = this.prepareCallbacks([this.didDestroyObject, this, object], options, 'success');
         var errorCallbacks   = this.prepareCallbacks([this.didError, this, object], options, 'error');
 		this.get('ds').destroy(object.constructor, this.toJSON(object, options), successCallbacks, errorCallbacks);
@@ -70,7 +74,7 @@ Syrah.Store = Ember.Object.extend({
 		return this.get('marshaller').unmarshall(json, object);
 	},
 	
-	didAddObject: function(object, json) {
+	didAddObject: function(object, embedded, json) {
 		// The DS must provide an ID for the newly created object in the returned JSON
         var pk = object.hasOwnProperty('getPrimaryKey') ? object.getPrimaryKey() : 'id';
         if (json[pk] === undefined) {
@@ -78,8 +82,46 @@ Syrah.Store = Ember.Object.extend({
         }
         id = json[pk];
 		object.set('id', id);
+
+        if (embedded.length !== 0) {
+            this.didAddEmbeddedObjects(object, embedded, json);
+        }
+
 		return object;
 	},
+
+    didAddEmbeddedObjects: function(object, embedded, json) {
+        var assocs = object.getAssociations();
+        var definedProps = object.getMetadata().definedProperties;
+
+        var filterSubEmbeddedAssocs = function(parentAssocName) {
+            var subEmbeddedAssocs = [];
+            var re = new RegExp('^' + parentAssocName + "\.");
+            embedded.forEach(function(item) {
+                if (item.match(re)) {
+                    subEmbeddedAssocs.push(item.replace(re, ''));
+                }
+            });
+            return subEmbeddedAssocs;
+        }
+
+        for (var assocName in assocs) {
+            if (embedded.indexOf(assocName) === -1) continue;
+
+            if (json[assocName] === undefined) {
+                throw "The DataSource has not provided a JSON value (with IDs) for the newly created '"+assocName+"' embedded object(s)";
+            }
+
+            var propDef = definedProps[assocName];
+            if (propDef.type === Syrah.HasMany) {
+                object.get(assocName).get('content').forEach(function(item, index) {
+                    this.didAddObject(item, filterSubEmbeddedAssocs(assocName), json[assocName][index]);
+                }, this);
+            } else {
+                this.didAddObject(item, filterSubEmbeddedAssocs(assocName), json[assocName]);
+            }
+        }
+    },
 	
 	didUpdateObject: function(object, json) {
 		
@@ -91,7 +133,7 @@ Syrah.Store = Ember.Object.extend({
 
     didAddObjects: function(objects, json) {
         json.forEach(function(item, index) {
-            this.didAddObject(objects[index], item);
+            this.didAddObject(objects[index], [], item);
         }, this);
     },
 
