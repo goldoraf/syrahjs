@@ -108,7 +108,7 @@ test("Data can be urlencoded too", function() {
     contact.set('addressbook', Foo.Addressbook.create({ name: "My contacts" }));
     store.add(contact, { embedded: ['phones', 'addressbook'] });
 
-    expectData("contact.firstname=John&contact.lastname=Doe&contact.phones[0].number=%2B12345678&contact.phones[0].type=mobile&contact.phones[1].number=%2B87654321&contact.phones[1].type=mobile&contact.addressbook.name=My%20contacts");
+    expectData("contact.firstname=John&contact.lastname=Doe&contact.addressbook.name=My%20contacts&contact.phones[0].number=%2B12345678&contact.phones[0].type=mobile&contact.phones[1].number=%2B87654321&contact.phones[1].type=mobile");
 
     var bulk = store.bulk();
     var contact1 = Foo.Contact.create({ firstname: 'John', lastname: 'Doe' });

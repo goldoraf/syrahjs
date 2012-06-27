@@ -61,6 +61,13 @@ test("Simple model unmarshalling", function() {
 
 test("Model with HasMany association (un)marshalling", function() {
     window.Bar = Ember.Namespace.create();
+    Bar.Addressbook = Syrah.Model.define({
+        name: String,
+        contacts: {
+            type: Syrah.HasMany,
+            itemType: "Bar.Contact"
+        }
+    });
     Bar.Contact = Syrah.Model.define({
         name: String,
         phones: {
@@ -91,6 +98,12 @@ test("Model with HasMany association (un)marshalling", function() {
     var generatedJson = marshaller.marshall(loadedContact, { embedded: ['phones'] });
     ok(generatedJson.hasOwnProperty('phones'), "HasMany associations can be marshalled when using the 'embedded' option");
     deepEqual(generatedJson, json);
+
+    var ab = Bar.Addressbook.create({ name: "My contacts" });
+    ab.get('contacts').pushObject(loadedContact);
+    var generatedJson = marshaller.marshall(ab, { embedded: ['contacts', 'contacts.phones'] });
+    var expectedJson = { name: "My contacts", contacts:[{ name: "John", phones:[{ number: "+12345678"}, { number: "+87654321" }]}]}
+    deepEqual(generatedJson, expectedJson, "Associations of embedded associations can also be embedded");
 });
 
 test("Model with BelongsTo association (un)marshalling", function() {

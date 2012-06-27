@@ -18,6 +18,7 @@ Syrah.JSONMarshaller = Ember.Object.extend({
         var data = object.getProperties(primitiveProps);
 
         var definedProps = object.getMetadata().definedProperties;
+
         for (var propName in data) {
             var type = definedProps[propName].type;
             var typecast = Syrah.typecastFor(type);
@@ -26,21 +27,30 @@ Syrah.JSONMarshaller = Ember.Object.extend({
             }
         }
 
-        var assocData = object.getProperties(embeddedAssocs);
-        for (var propName in assocData) {
-            var propDef = definedProps[propName];
-            if (propDef.isAssociation !== true) {
-                Ember.warn("'Embedded' option should only be used with associations");
-                continue;
-            }
+        var filterSubEmbeddedAssocs = function(parentAssocName) {
+            var subEmbeddedAssocs = [];
+            var re = new RegExp('^' + parentAssocName + "\.");
+            embeddedAssocs.forEach(function(item) {
+                if (item.match(re)) {
+                    subEmbeddedAssocs.push(item.replace(re, ''));
+                }
+            });
+            return subEmbeddedAssocs;
+        }
+
+        var assocs = object.getAssociations();
+        for (var assocName in assocs) {
+            if (embeddedAssocs.indexOf(assocName) === -1) continue;
+
+            var propDef = definedProps[assocName];
             if (propDef.type === Syrah.HasMany) {
                 var value = [];
-                assocData[propName].get('content').forEach(function(item) {
-                    value.push(this.marshallModel(item));
+                object.get(assocName).get('content').forEach(function(item) {
+                    value.push(this.marshallModel(item, filterSubEmbeddedAssocs(assocName)));
                 }, this);
-                data[propName] = value;
+                data[assocName] = value;
             } else {
-                data[propName] = this.marshallModel(assocData[propName]);
+                data[assocName] = this.marshallModel(object.get(assocName), filterSubEmbeddedAssocs(assocName));
             }
         }
 
