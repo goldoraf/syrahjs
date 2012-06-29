@@ -31,6 +31,7 @@ test("Basic property definition", function() {
 
     ok(p.get('name') !== undefined, "A corresponding property exists when instantiated");
     equal(p.get('name'), null, "Its default value is null");
+    equal(p.getPropertyDefault('name'), null, "We can get a property's default value");
     p.set('name', 'John');
     equal(p.get('name'), 'John', "The property can be set");
     equal(Person.create({ name: 'John' }).get('name'), 'John', "The property can be set when creating a new object");

@@ -182,6 +182,10 @@ Syrah.Model.reopen({
         return this.getPropertyDefinition(propertyName).type;
     },
 
+    getPropertyDefault: function(propertyName) {
+        return this.getPropertyDefinition(propertyName).defaultValue;
+    },
+
     getPropertyDefinition: function(propertyName) {
         Ember.assert("Property '" + propertyName + "' has not been defined", this.getMetadata().definedProperties.hasOwnProperty(propertyName));
         return this.getMetadata().definedProperties[propertyName];
