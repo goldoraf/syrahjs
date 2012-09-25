@@ -216,10 +216,12 @@ Syrah.HasMany = Ember.Object.extend({});
 
 Syrah.HasMany.getComputedProperty = function(options) {
     var fk = options.foreignKey || null;
+    var inverseOf = options.inverseOf || null;
 
     return Ember.computed(function(key, value) {
         return Syrah.HasManyCollection.create({
             type: options.type,
+            inverseOf: inverseOf,
             content: [],
             parentObject: this,
             foreignKey: fk
@@ -242,11 +244,14 @@ Syrah.HasManyCollection = Syrah.ModelCollection.extend({
             fk = Syrah.Inflector.getFkForType(this.get('parentObject').constructor);
         }
         var parentId = this.get('parentObject').get('id');
-        if (!Ember.none(parentId)) {
-            var propertyName = Syrah.Inflector.getFkName(fk);
+        if (!Ember.none(parentId)) { 
             object.setDbRef(fk, parentId);
-            object.set(propertyName, this.get('parentObject'));
         }
+        var inverse = this.get('inverseOf');
+        if (inverse !== null) {
+            object.set(inverse, this.get('parentObject'));
+        }
+
         this._super(object);
     }
 });

@@ -19,6 +19,23 @@ module('Associations test', {
             title: String,
             author: Foo.Author
         });
+        Foo.Post = Syrah.Model.define({
+            title: String,
+            content: String,
+            comments: {
+                type: Syrah.HasMany,
+                itemType: "Foo.Comment",
+                inverseOf: 'post'
+            }
+        });
+        Foo.Comment = Syrah.Model.define({
+            author: String,
+            content: String,
+            post: {
+                type: Foo.Post,
+                inverseOf: 'comments'
+            }
+        });
     }
 });
 
@@ -38,8 +55,6 @@ test("HasMany association usage", function() {
     ok(contact.get('phones').get('parentObject') !== undefined, "A HasMany collection should maintain a link to its parent object");
     equal(contact.get('phones').get('parentObject').get('firstname'), 'John', "A HasMany collection should maintain a link to its parent object");
 
-
-
     contact.get('phones').pushObject(phone);
     equal(contact.get('phones').objectAt(0).getDbRef('contact_id'), 1234, "An object in a HasMany collection should maintain a DbRef to its parent object");
 
@@ -56,6 +71,14 @@ test("BelongsTo association usage", function() {
 
     equal(blog.getDbRef('author_id'), 5678, "An object should maintain a FK to the object it belongs to");
     equal(blog.get('author').get('name'), 'John Doe', "The object it belongs to can be retrieved");
+});
+
+test("Bi-directional associations", function() {
+    var post = Foo.Post.create({ title: 'Javascript rulez !' });
+    var comment = Foo.Comment.create({ author: 'jdoe', content: 'I agree !' });
+    post.get('comments').pushObject(comment);
+
+    equal(comment.get('post').get('title'), post.get('title'), "Inverseof a HasMany association should be set when an object is pushed");
 });module('Bulk tests', {
     setup: function() {
         window.Foo = Ember.Namespace.create();
@@ -417,7 +440,8 @@ module('Model definition test', {
             name: String,
             contacts: {
                 type: Syrah.HasMany,
-                itemType: "Foo.Contact"
+                itemType: "Foo.Contact",
+                inverseOf: "addressbook"
             }
         });
         Foo.Contact = Syrah.Model.define({
@@ -502,6 +526,8 @@ test("A model can be duplicated", function() {
 
     equal(newAb.get('contacts').objectAt(0).get('phones').objectAt(0).constructor, Foo.Phone, "Duplicated HasMany sub-associations of an object should be of the correct type");
     equal(newAb.get('contacts').objectAt(0).get('phones').objectAt(0).get('number'), "+12345678", "Duplicated HasMany sub-associations' properties should be correctly duplicated");
+
+    equal(newAb.get('contacts').objectAt(0).get('addressbook').constructor, Foo.Addressbook, "Duplicated HasMany associations of an object should maintain their association with their parent object");
 });
 module('RESTApiDataSource test', {
 	setup: function() {

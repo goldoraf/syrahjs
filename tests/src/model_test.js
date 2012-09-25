@@ -5,7 +5,8 @@ module('Model definition test', {
             name: String,
             contacts: {
                 type: Syrah.HasMany,
-                itemType: "Foo.Contact"
+                itemType: "Foo.Contact",
+                inverseOf: "addressbook"
             }
         });
         Foo.Contact = Syrah.Model.define({
@@ -90,4 +91,6 @@ test("A model can be duplicated", function() {
 
     equal(newAb.get('contacts').objectAt(0).get('phones').objectAt(0).constructor, Foo.Phone, "Duplicated HasMany sub-associations of an object should be of the correct type");
     equal(newAb.get('contacts').objectAt(0).get('phones').objectAt(0).get('number'), "+12345678", "Duplicated HasMany sub-associations' properties should be correctly duplicated");
+
+    equal(newAb.get('contacts').objectAt(0).get('addressbook').constructor, Foo.Addressbook, "Duplicated HasMany associations of an object should maintain their association with their parent object");
 });
