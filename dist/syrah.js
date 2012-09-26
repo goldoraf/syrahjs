@@ -241,17 +241,7 @@ Syrah.Model.reopenClass({
                 propertiesMeta[propertyName] = propertyDef;
                 var defaultValue = propertyDef.defaultValue || null;
                 if (propertyDef.isAssociation === true) {
-                    properties[propertyName] = Ember.computed(function(key, value) {
-                        var assoc = this.getAssociationObject(key);
-                        if (arguments.length === 2) {
-                            assoc.replaceTarget(value);
-                            return value;
-                        }
-                        if (assoc.constructor === Syrah.HasManyCollection) {
-                            return assoc;
-                        }
-                        return assoc.get('target');
-                    }).property();
+                    properties[propertyName] = Syrah.Association.getComputedProperty();
                 } else {
                     properties[propertyName] = defaultValue;
                 }
@@ -283,7 +273,7 @@ Syrah.Model.reopenClass({
                 assocObject = Syrah.HasManyCollection.create({
                     inverseOf: inverseOf,
                     content: [],
-                    parentObject: instance,
+                    owner: instance,
                     foreignKey: fk
                 });
             } else {
@@ -451,6 +441,24 @@ var expandPropertyDefinition = function(name, definition) {
 
 
 (function() {
+Syrah.Association = Ember.Object.extend({});
+
+Syrah.Association.reopenClass({
+    getComputedProperty: function() {
+        return Ember.computed(function(key, value) {
+            var assoc = this.getAssociationObject(key);
+            if (arguments.length === 2) {
+                assoc.replaceTarget(value);
+                return value;
+            }
+            if (assoc.constructor === Syrah.HasManyCollection) {
+                return assoc;
+            }
+            return assoc.get('target');
+        }).property();
+    }
+});
+
 Syrah.BelongsTo = Ember.Object.extend({
     target: null,
     owner: null,
@@ -483,7 +491,7 @@ Syrah.HasMany = Ember.Object.extend({});
 Syrah.HasManyCollection = Ember.ArrayProxy.extend({
     type: null,
     content: [],
-    parentObject: null,
+    owner: null,
     foreignKey: null,
 
     // TODO : rename/refacto ?
@@ -494,9 +502,9 @@ Syrah.HasManyCollection = Ember.ArrayProxy.extend({
     pushObject: function(object) {
         var fk = this.get('foreignKey');
         if (fk === null) {
-            fk = Syrah.Inflector.getFkForType(this.get('parentObject').constructor);
+            fk = Syrah.Inflector.getFkForType(this.get('owner').constructor);
         }
-        var parentId = this.get('parentObject').get('id');
+        var parentId = this.get('owner').get('id');
         if (!Ember.none(parentId)) { 
             object.setDbRef(fk, parentId);
         }
@@ -504,7 +512,7 @@ Syrah.HasManyCollection = Ember.ArrayProxy.extend({
         if (inverse !== null) {
             var inverseAssoc = object.getAssociationObject(inverse);
             // TODO : ajouter un check
-            inverseAssoc.set('target', this.get('parentObject'));
+            inverseAssoc.set('target', this.get('owner'));
         }
 
         this._super(object);

@@ -30,17 +30,7 @@ Syrah.Model.reopenClass({
                 propertiesMeta[propertyName] = propertyDef;
                 var defaultValue = propertyDef.defaultValue || null;
                 if (propertyDef.isAssociation === true) {
-                    properties[propertyName] = Ember.computed(function(key, value) {
-                        var assoc = this.getAssociationObject(key);
-                        if (arguments.length === 2) {
-                            assoc.replaceTarget(value);
-                            return value;
-                        }
-                        if (assoc.constructor === Syrah.HasManyCollection) {
-                            return assoc;
-                        }
-                        return assoc.get('target');
-                    }).property();
+                    properties[propertyName] = Syrah.Association.getComputedProperty();
                 } else {
                     properties[propertyName] = defaultValue;
                 }
@@ -72,7 +62,7 @@ Syrah.Model.reopenClass({
                 assocObject = Syrah.HasManyCollection.create({
                     inverseOf: inverseOf,
                     content: [],
-                    parentObject: instance,
+                    owner: instance,
                     foreignKey: fk
                 });
             } else {
