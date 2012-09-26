@@ -81,13 +81,13 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
                 if (this.isRequestSuccessful(json, textStatus, xhr)) {
                     this.executeCallbacks(successCallbacks, this.parseResponseData(json, type));
                 } else {
-                    this.executeCallbacks(errorCallbacks, {}, this.parseErrorResponse(xhr.responseText), xhr); // TODO : pass a real exception
+                    this.executeCallbacks(errorCallbacks, {}, this.parseErrorResponse(xhr), xhr); // TODO : pass a real exception
                 }
             };
         }
         if (options.error === undefined && errorCallbacks !== undefined) {
             options.error = function(xhr, textStatus, errorThrown) {
-                this.executeCallbacks(errorCallbacks, errorThrown, this.parseErrorResponse(xhr.responseText), xhr);
+                this.executeCallbacks(errorCallbacks, errorThrown, this.parseErrorResponse(xhr), xhr);
             };
         }
 
@@ -164,7 +164,7 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
         return json;
     },
 
-    parseErrorResponse: function(responseText) {
-        return JSON.parse(responseText);
+    parseErrorResponse: function(xhr) {
+        return JSON.parse(xhr.responseText);
     }
 });
