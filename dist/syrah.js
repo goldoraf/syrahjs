@@ -178,6 +178,37 @@ String.prototype.ucfirst = function() {
 
 
 (function() {
+Syrah.typecastFor = function(type) {
+    switch(type) {
+        case Date:
+            return Syrah.typecasts['date'];
+            break;
+        default:
+            return undefined;
+    }
+}
+
+Syrah.typecasts = {
+    'date' : {
+        fromJson: function(value) {
+            if (typeof value === 'string' || typeof value === 'number') {
+                return new Date(Date.parse(value));
+            }
+            return null;
+        },
+        toJson: function(value) {
+            if (value instanceof Date) {
+                return value.toISOString();
+            }
+            return value;
+        }
+    }
+}
+})();
+
+
+
+(function() {
 Syrah.Model = Ember.Object.extend({
 
 	id: Ember.computed(function(key, value) {
@@ -192,26 +223,6 @@ Syrah.Model = Ember.Object.extend({
 	}).property()
 
 });
-
-var expandPropertyDefinition = function(name, definition) {
-    if (definition === Number || definition === String || definition === Boolean || definition === Date || definition === Object || definition.isModel === true) {
-        definition = { type: definition };
-    }
-    Ember.assert("A property's definition must have a type", definition.type !== undefined);
-
-    if (definition.type.isModel || typeof(definition.type) == 'string') {
-        definition.isAssociation = true;
-        if (definition.foreignKey === undefined) {
-            definition.foreignKey = Syrah.Inflector.getFkForType(definition.type);
-        }
-    }
-
-    if (definition.type === Syrah.HasMany) {
-        Ember.assert("A HasMany must have an itemType", definition.itemType !== undefined);
-        definition.isAssociation = true;
-    }
-    return definition;
-}
 
 Syrah.Model.reopenClass({
     define: function(schema) {
@@ -287,67 +298,15 @@ Syrah.Model.reopenClass({
         }
 
         return instance;
+    },
+
+    getPk: function() {
+        return this.__metadata__.primaryKey;
     }
 });
 
 Syrah.Model.reopen({
-    duplicate: function(options) {
-        options = options || {};
-        var duplicateAssocs = options.duplicateAssociations || [];
-        var includeAssocs = options.includeAssociations || [];
-
-        var newInstance = this.constructor.create({});
-        var data = {};
-
-        //newInstance.beginPropertyChanges();
-
-        var primitiveProps = this.getPrimitiveProperties();
-        primitiveProps.forEach(function(propName) {
-            data[propName] = this.get(propName);
-        }, this);
-
-        newInstance.setProperties(data);
-
-        var filterSubAssocs = function(assocs, parentAssocName) {
-            var subAssocs = [];
-            var re = new RegExp('^' + parentAssocName + "\.");
-            assocs.forEach(function(item) {
-                if (item.match(re)) {
-                    subAssocs.push(item.replace(re, ''));
-                }
-            });
-            return subAssocs;
-        }
-
-        var assocs = this.getAssociations();
-        for (var assocName in assocs) {
-            if (duplicateAssocs.indexOf(assocName) === -1 && includeAssocs.indexOf(assocName) === -1) continue;
-            var assoc = assocs[assocName];
-            var subOptions = {
-                duplicateAssociations: filterSubAssocs(duplicateAssocs, assocName),
-                includeAssociations: filterSubAssocs(includeAssocs, assocName)
-            };
-            if (assoc.type === Syrah.HasMany) {
-                this.get(assocName).forEach(function(item) {
-                    if (duplicateAssocs.indexOf(assocName) !== -1) {
-                        newInstance.get(assocName).pushObject(item.duplicate(subOptions));
-                    } else if (includeAssocs.indexOf(assocName) !== -1) {
-                        newInstance.get(assocName).pushObject(item);
-                    }
-                });
-            } else {
-                if (duplicateAssocs.indexOf(assocName) !== -1) {
-                    newInstance.set(assocName, this.get(assocName).duplicate(subOptions));
-                } else if (includeAssocs.indexOf(assocName) !== -1) {
-                    newInstance.set(assocName, this.get(assocName));
-                }
-            }
-        }
-
-        //newInstance.endPropertyChanges();
-        return newInstance;
-    },
-
+    
     isNew: function() {
         return this.get('id') === undefined;
     },
@@ -406,15 +365,92 @@ Syrah.Model.reopen({
 
     getMetadata: function() {
         return this.constructor.__metadata__;
+    },
+
+    duplicate: function(options) {
+        options = options || {};
+        var duplicateAssocs = options.duplicateAssociations || [];
+        var includeAssocs = options.includeAssociations || [];
+
+        var newInstance = this.constructor.create({});
+        var data = {};
+
+        //newInstance.beginPropertyChanges();
+
+        var primitiveProps = this.getPrimitiveProperties();
+        primitiveProps.forEach(function(propName) {
+            data[propName] = this.get(propName);
+        }, this);
+
+        newInstance.setProperties(data);
+
+        var filterSubAssocs = function(assocs, parentAssocName) {
+            var subAssocs = [];
+            var re = new RegExp('^' + parentAssocName + "\.");
+            assocs.forEach(function(item) {
+                if (item.match(re)) {
+                    subAssocs.push(item.replace(re, ''));
+                }
+            });
+            return subAssocs;
+        }
+
+        var assocs = this.getAssociations();
+        for (var assocName in assocs) {
+            if (duplicateAssocs.indexOf(assocName) === -1 && includeAssocs.indexOf(assocName) === -1) continue;
+            var assoc = assocs[assocName];
+            var subOptions = {
+                duplicateAssociations: filterSubAssocs(duplicateAssocs, assocName),
+                includeAssociations: filterSubAssocs(includeAssocs, assocName)
+            };
+            if (assoc.type === Syrah.HasMany) {
+                this.get(assocName).forEach(function(item) {
+                    if (duplicateAssocs.indexOf(assocName) !== -1) {
+                        newInstance.get(assocName).pushObject(item.duplicate(subOptions));
+                    } else if (includeAssocs.indexOf(assocName) !== -1) {
+                        newInstance.get(assocName).pushObject(item);
+                    }
+                });
+            } else {
+                if (duplicateAssocs.indexOf(assocName) !== -1) {
+                    newInstance.set(assocName, this.get(assocName).duplicate(subOptions));
+                } else if (includeAssocs.indexOf(assocName) !== -1) {
+                    newInstance.set(assocName, this.get(assocName));
+                }
+            }
+        }
+
+        //newInstance.endPropertyChanges();
+        return newInstance;
     }
 });
 
-Syrah.Model.reopenClass({
-    getPk: function() {
-        return this.__metadata__.primaryKey;
+var expandPropertyDefinition = function(name, definition) {
+    if (definition === Number || definition === String || definition === Boolean || definition === Date || definition === Object || definition.isModel === true) {
+        definition = { type: definition };
     }
-});
+    Ember.assert("A property's definition must have a type", definition.type !== undefined);
 
+    if (definition.type.isModel || typeof(definition.type) == 'string') {
+        definition.isAssociation = true;
+        if (definition.foreignKey === undefined) {
+            definition.foreignKey = Syrah.Inflector.getFkForType(definition.type);
+        }
+    }
+
+    if (definition.type === Syrah.HasMany) {
+        Ember.assert("A HasMany must have an itemType", definition.itemType !== undefined);
+        definition.isAssociation = true;
+    }
+    return definition;
+}
+
+
+})();
+
+
+
+(function() {
 Syrah.BelongsTo = Ember.Object.extend({
     target: null,
     owner: null,
@@ -478,34 +514,6 @@ Syrah.HasManyCollection = Ember.ArrayProxy.extend({
         //this.set('content', value);
     }
 });
-
-Syrah.typecastFor = function(type) {
-    switch(type) {
-        case Date:
-            return Syrah.typecasts['date'];
-            break;
-        default:
-            return undefined;
-    }
-}
-
-Syrah.typecasts = {
-    'date' : {
-        fromJson: function(value) {
-            if (typeof value === 'string' || typeof value === 'number') {
-                return new Date(Date.parse(value));
-            }
-            return null;
-        },
-        toJson: function(value) {
-            if (value instanceof Date) {
-                return value.toISOString();
-            }
-            return value;
-        }
-    }
-}
-
 })();
 
 
@@ -655,6 +663,7 @@ Syrah.JSONMarshaller = Ember.Object.extend({
 		return object;
 	}
 });
+
 })();
 
 
