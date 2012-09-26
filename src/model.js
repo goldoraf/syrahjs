@@ -24,23 +24,11 @@ var expandPropertyDefinition = function(name, definition) {
         if (definition.foreignKey === undefined) {
             definition.foreignKey = Syrah.Inflector.getFkForType(definition.type);
         }
-        definition.observer = function() {
-            if (this.get(name) === null) {
-                this.setDbRef(definition.foreignKey, null);
-            } else {
-                var objectId = this.get(name).get('id');
-                if (!Ember.none(objectId)) {
-                    this.setDbRef(definition.foreignKey, objectId);
-                }
-            }
-        }
     }
 
     if (definition.type === Syrah.HasMany) {
         Ember.assert("A HasMany must have an itemType", definition.itemType !== undefined);
-
         definition.isAssociation = true;
-        definition.defaultValue = Syrah.HasMany.getComputedProperty(definition);
     }
     return definition;
 }
@@ -61,7 +49,21 @@ Syrah.Model.reopenClass({
                 var propertyDef = expandPropertyDefinition(propertyName, schema[propertyName]);
                 propertiesMeta[propertyName] = propertyDef;
                 var defaultValue = propertyDef.defaultValue || null;
-                properties[propertyName] = defaultValue;
+                if (propertyDef.isAssociation === true) {
+                    properties[propertyName] = Ember.computed(function(key, value) {
+                        var assoc = this.getAssociationObject(key);
+                        if (arguments.length === 2) {
+                            assoc.replaceTarget(value);
+                            return value;
+                        }
+                        if (assoc.constructor === Syrah.HasManyCollection) {
+                            return assoc;
+                        }
+                        return assoc.get('target');
+                    }).property();
+                } else {
+                    properties[propertyName] = defaultValue;
+                }
             }
         }
 
@@ -78,13 +80,30 @@ Syrah.Model.reopenClass({
     create: function(data) {
         var instance = this._super.apply(this, arguments);
         instance.__dbrefs__ = {};
+        instance.__associations__ = {};
 
-        // TODO : put this in define()
         var assocs = instance.getAssociations();
         for (var assocName in assocs) {
-            if (assocs[assocName].observer) {
-                instance.addObserver(assocName, assocs[assocName].observer);
+            var assoc = assocs[assocName];
+            var fk = assoc.foreignKey || null;
+            var inverseOf = assoc.inverseOf || null;
+            
+            if (assoc.type === Syrah.HasMany) {
+                assocObject = Syrah.HasManyCollection.create({
+                    inverseOf: inverseOf,
+                    content: [],
+                    parentObject: instance,
+                    foreignKey: fk
+                });
+            } else {
+                assocObject = Syrah.BelongsTo.create({
+                    inverseOf: inverseOf,
+                    target: null,
+                    owner: instance,
+                    foreignKey: fk
+                });
             }
+            instance.__associations__[assocName] = assocObject;
         }
 
         return instance;
@@ -169,6 +188,10 @@ Syrah.Model.reopen({
         return [this.getPrimaryKey()];
     },
 
+    getAssociationObject: function(assocName) {
+        return this.__associations__[assocName];
+    },
+
     getAssociations: function() {
         var assocs = {};
         var props = this.getMetadata().definedProperties;
@@ -212,31 +235,45 @@ Syrah.Model.reopenClass({
     }
 });
 
-Syrah.HasMany = Ember.Object.extend({});
+Syrah.BelongsTo = Ember.Object.extend({
+    target: null,
+    owner: null,
+    foreignKey: null,
 
-Syrah.HasMany.getComputedProperty = function(options) {
-    var fk = options.foreignKey || null;
-    var inverseOf = options.inverseOf || null;
+    replaceTarget: function(object) {
+        this.set('target', object);
+        this.replaceForeignKey(object);
+        
+        var inverse = this.get('inverseOf');
+        if (inverse !== null) {
+            var inverseAssoc = object.getAssociationObject(inverse);
+            if (inverseAssoc.constructor === Syrah.HasManyCollection) {
+                inverseAssoc.pushInverseInstance(this.get('owner'));
+            } else {
+                inverseAssoc.set('target', this.get('owner'));
+            }
+        }
+    },
 
-    return Ember.computed(function(key, value) {
-        return Syrah.HasManyCollection.create({
-            type: options.type,
-            inverseOf: inverseOf,
-            content: [],
-            parentObject: this,
-            foreignKey: fk
-        });
-    }).property().cacheable();
-}
-
-Syrah.ModelCollection = Ember.ArrayProxy.extend({
-    type: null,
-    content: []
+    replaceForeignKey: function(object) {
+        if (object !== null && !Ember.none(object.get('id'))) {
+            this.get('owner').setDbRef(this.get('foreignKey'), object.get('id'));
+        }
+    }
 });
 
-Syrah.HasManyCollection = Syrah.ModelCollection.extend({
+Syrah.HasMany = Ember.Object.extend({});
+
+Syrah.HasManyCollection = Ember.ArrayProxy.extend({
+    type: null,
+    content: [],
     parentObject: null,
     foreignKey: null,
+
+    // TODO : rename/refacto ?
+    pushInverseInstance: function(object) {
+        Ember.ArrayProxy.prototype.pushObject.call(this, object);
+    },
 
     pushObject: function(object) {
         var fk = this.get('foreignKey');
@@ -249,10 +286,16 @@ Syrah.HasManyCollection = Syrah.ModelCollection.extend({
         }
         var inverse = this.get('inverseOf');
         if (inverse !== null) {
-            object.set(inverse, this.get('parentObject'));
+            var inverseAssoc = object.getAssociationObject(inverse);
+            // TODO : ajouter un check
+            inverseAssoc.set('target', this.get('parentObject'));
         }
 
         this._super(object);
+    },
+
+    replaceTarget: function(value) {
+        //this.set('content', value);
     }
 });
 

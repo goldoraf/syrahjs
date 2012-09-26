@@ -79,4 +79,10 @@ test("Bi-directional associations", function() {
     post.get('comments').pushObject(comment);
 
     equal(comment.get('post').get('title'), post.get('title'), "Inverseof a HasMany association should be set when an object is pushed");
+
+    var comment2 = Foo.Comment.create({ author: 'jane', content: 'I disagree !' });
+    comment2.set('post', post);
+
+    equal(post.get('comments').get('length'), 2);
+    equal(post.get('comments').objectAt(1).get('author'), 'jane');
 });
