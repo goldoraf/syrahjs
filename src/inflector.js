@@ -56,11 +56,6 @@ Syrah.Inflector.reopenClass({
         return Syrah.Inflector.getTypeName(type) + '_id';
     },
 
-    getFkName: function(type) {
-        return type.split('.')[0];
-    },
-
-
     guessAssociationType: function(collectionName, parentType) {
         var currentNamespace = Syrah.Inflector.getTypeNamespace(parentType);
         var possibleType = Syrah.Inflector.singularize(collectionName).camelize().ucfirst();
