@@ -46,7 +46,7 @@ test("A model has a getAssociations() method that list the defined associations"
 
 test("HasMany association definition", function() {
     var c = Foo.Contact.create();
-    ok(c.get('phones') instanceof Syrah.HasManyCollection, "A collection property has been set");
+    ok(c.get('phones') instanceof Syrah.HasMany, "A collection property has been set");
 });
 
 test("HasMany association usage", function() {

@@ -93,7 +93,7 @@ Syrah.Model.reopen({
             var assocObject;
             
             if (prop.type === Syrah.HasMany) {
-                assocObject = Syrah.HasManyCollection.create({
+                assocObject = Syrah.HasMany.create({
                     inverseOf: inverseOf,
                     content: [],
                     owner: this,

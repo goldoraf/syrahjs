@@ -8,7 +8,7 @@ Syrah.Association.reopenClass({
                 assoc.replaceTarget(value);
                 return value;
             }
-            if (assoc.constructor === Syrah.HasManyCollection) {
+            if (assoc.constructor === Syrah.HasMany) {
                 return assoc;
             }
             return assoc.get('target');
@@ -28,7 +28,7 @@ Syrah.BelongsTo = Ember.Object.extend({
         var inverse = this.get('inverseOf');
         if (inverse !== null) {
             var inverseAssoc = object.getAssociationObject(inverse);
-            if (inverseAssoc.constructor === Syrah.HasManyCollection) {
+            if (inverseAssoc.constructor === Syrah.HasMany) {
                 inverseAssoc.pushInverseInstance(this.get('owner'));
             } else {
                 inverseAssoc.set('target', this.get('owner'));
@@ -43,9 +43,7 @@ Syrah.BelongsTo = Ember.Object.extend({
     }
 });
 
-Syrah.HasMany = Ember.Object.extend({});
-
-Syrah.HasManyCollection = Ember.ArrayProxy.extend({
+Syrah.HasMany = Ember.ArrayProxy.extend({
     type: null,
     content: [],
     owner: null,
