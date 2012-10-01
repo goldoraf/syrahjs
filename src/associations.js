@@ -1,21 +1,3 @@
-Syrah.Association = Ember.Object.extend({});
-
-Syrah.Association.reopenClass({
-    getComputedProperty: function() {
-        return Ember.computed(function(key, value) {
-            var assoc = this.getAssociationObject(key);
-            if (arguments.length === 2) {
-                assoc.replaceTarget(value);
-                return value;
-            }
-            if (assoc.constructor === Syrah.HasMany) {
-                return assoc;
-            }
-            return assoc.get('target');
-        }).property();
-    }
-});
-
 Syrah.BelongsTo = Ember.Object.extend({
     target: null,
     owner: null,
@@ -43,6 +25,31 @@ Syrah.BelongsTo = Ember.Object.extend({
     }
 });
 
+Syrah.BelongsTo.reopenClass({
+    createInstance: function(options, owner) {
+        var fk = options.foreignKey || null,
+            inverseOf = options.inverseOf || null;
+
+        return Syrah.BelongsTo.create({
+            inverseOf: inverseOf,
+            target: null,
+            owner: owner,
+            foreignKey: fk
+        });
+    },
+
+    getComputedProperty: function() {
+        return Ember.computed(function(key, value) {
+            var assoc = this.getAssociationObject(key);
+            if (arguments.length === 2) {
+                assoc.replaceTarget(value);
+                return value;
+            }
+            return assoc.get('target');
+        }).property();
+    }
+});
+
 Syrah.HasMany = Ember.ArrayProxy.extend({
     type: null,
     content: [],
@@ -55,13 +62,9 @@ Syrah.HasMany = Ember.ArrayProxy.extend({
     },
 
     pushObject: function(object) {
-        var fk = this.get('foreignKey');
-        if (fk === null) {
-            fk = Syrah.Inflector.getFkForType(this.get('owner').constructor);
-        }
         var parentId = this.get('owner').get('id');
         if (!Ember.none(parentId)) { 
-            object.setDbRef(fk, parentId);
+            object.setDbRef(this.get('foreignKey'), parentId);
         }
         var inverse = this.get('inverseOf');
         if (inverse !== null) {
@@ -77,3 +80,23 @@ Syrah.HasMany = Ember.ArrayProxy.extend({
         //this.set('content', value);
     }
 });
+
+Syrah.HasMany.reopenClass({
+    createInstance: function(options, owner) {
+        var fk = options.foreignKey || Syrah.Inflector.getFkForType(owner.constructor),
+            inverseOf = options.inverseOf || null;
+
+        return Syrah.HasMany.create({
+            inverseOf: inverseOf,
+            content: [],
+            owner: owner,
+            foreignKey: fk
+        });
+    },
+
+    getComputedProperty: function() {
+        return Ember.computed(function(key, value) {
+            return this.getAssociationObject(key);
+        }).property();
+    }
+})

@@ -241,7 +241,7 @@ Syrah.Model.reopenClass({
                 propertiesMeta[propertyName] = propertyDef;
                 var defaultValue = propertyDef.defaultValue || null;
                 if (propertyDef.isAssociation === true) {
-                    properties[propertyName] = Syrah.Association.getComputedProperty();
+                    properties[propertyName] = propertyDef.assocType.getComputedProperty();
                 } else {
                     properties[propertyName] = defaultValue;
                 }
@@ -299,27 +299,7 @@ Syrah.Model.reopen({
     getAssociationObject: function(assocName) {
         if (this.__associations__[assocName] === undefined) {
             var prop = this.getPropertyDefinition(assocName);
-            var fk = prop.foreignKey || null;
-            var inverseOf = prop.inverseOf || null;
-            var assocObject;
-            
-            if (prop.type === Syrah.HasMany) {
-                assocObject = Syrah.HasMany.create({
-                    inverseOf: inverseOf,
-                    content: [],
-                    owner: this,
-                    foreignKey: fk
-                });
-            } else {
-                assocObject = Syrah.BelongsTo.create({
-                    inverseOf: inverseOf,
-                    target: null,
-                    owner: this,
-                    foreignKey: fk
-                });
-            }
-
-            this.__associations__[assocName] = assocObject;
+            this.__associations__[assocName] = prop.assocType.createInstance(prop, this);
         }
         return this.__associations__[assocName]
     },
@@ -426,6 +406,7 @@ var expandPropertyDefinition = function(name, definition) {
 
     if (definition.type.isModel || typeof(definition.type) == 'string') {
         definition.isAssociation = true;
+        definition.assocType = Syrah.BelongsTo;
         if (definition.foreignKey === undefined) {
             definition.foreignKey = Syrah.Inflector.getFkForType(definition.type);
         }
@@ -434,6 +415,7 @@ var expandPropertyDefinition = function(name, definition) {
     if (definition.type === Syrah.HasMany) {
         Ember.assert("A HasMany must have an itemType", definition.itemType !== undefined);
         definition.isAssociation = true;
+        definition.assocType = Syrah.HasMany;
     }
     return definition;
 }
@@ -444,24 +426,6 @@ var expandPropertyDefinition = function(name, definition) {
 
 
 (function() {
-Syrah.Association = Ember.Object.extend({});
-
-Syrah.Association.reopenClass({
-    getComputedProperty: function() {
-        return Ember.computed(function(key, value) {
-            var assoc = this.getAssociationObject(key);
-            if (arguments.length === 2) {
-                assoc.replaceTarget(value);
-                return value;
-            }
-            if (assoc.constructor === Syrah.HasMany) {
-                return assoc;
-            }
-            return assoc.get('target');
-        }).property();
-    }
-});
-
 Syrah.BelongsTo = Ember.Object.extend({
     target: null,
     owner: null,
@@ -489,6 +453,31 @@ Syrah.BelongsTo = Ember.Object.extend({
     }
 });
 
+Syrah.BelongsTo.reopenClass({
+    createInstance: function(options, owner) {
+        var fk = options.foreignKey || null,
+            inverseOf = options.inverseOf || null;
+
+        return Syrah.BelongsTo.create({
+            inverseOf: inverseOf,
+            target: null,
+            owner: owner,
+            foreignKey: fk
+        });
+    },
+
+    getComputedProperty: function() {
+        return Ember.computed(function(key, value) {
+            var assoc = this.getAssociationObject(key);
+            if (arguments.length === 2) {
+                assoc.replaceTarget(value);
+                return value;
+            }
+            return assoc.get('target');
+        }).property();
+    }
+});
+
 Syrah.HasMany = Ember.ArrayProxy.extend({
     type: null,
     content: [],
@@ -501,13 +490,9 @@ Syrah.HasMany = Ember.ArrayProxy.extend({
     },
 
     pushObject: function(object) {
-        var fk = this.get('foreignKey');
-        if (fk === null) {
-            fk = Syrah.Inflector.getFkForType(this.get('owner').constructor);
-        }
         var parentId = this.get('owner').get('id');
         if (!Ember.none(parentId)) { 
-            object.setDbRef(fk, parentId);
+            object.setDbRef(this.get('foreignKey'), parentId);
         }
         var inverse = this.get('inverseOf');
         if (inverse !== null) {
@@ -523,6 +508,26 @@ Syrah.HasMany = Ember.ArrayProxy.extend({
         //this.set('content', value);
     }
 });
+
+Syrah.HasMany.reopenClass({
+    createInstance: function(options, owner) {
+        var fk = options.foreignKey || Syrah.Inflector.getFkForType(owner.constructor),
+            inverseOf = options.inverseOf || null;
+
+        return Syrah.HasMany.create({
+            inverseOf: inverseOf,
+            content: [],
+            owner: owner,
+            foreignKey: fk
+        });
+    },
+
+    getComputedProperty: function() {
+        return Ember.computed(function(key, value) {
+            return this.getAssociationObject(key);
+        }).property();
+    }
+})
 })();
 
 
