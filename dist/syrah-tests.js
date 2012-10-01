@@ -85,6 +85,18 @@ test("Bi-directional associations", function() {
 
     equal(post.get('comments').get('length'), 2);
     equal(post.get('comments').objectAt(1).get('author'), 'jane');
+});
+
+test("Computed properties dependent of associations", function() {
+    Foo.Post.reopen({
+        publishedComments: function() {
+            return this.get('comments').filterProperty('published', true);
+        }.property('comments.@each.published')
+    });
+    var post = Foo.Post.create({ title: 'Javascript rulez !' });
+    post.get('comments').pushObject(Foo.Comment.create({ author: 'jdoe', content: 'I agree !', published: true }));
+
+    equal(post.get('publishedComments').get('length'), 1);
 });module('Bulk tests', {
     setup: function() {
         window.Foo = Ember.Namespace.create();

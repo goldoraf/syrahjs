@@ -259,33 +259,12 @@ Syrah.Model.reopenClass({
     },
 
     create: function(data) {
-        var instance = this._super.apply(this, arguments);
+        var instance = this._super({
+            __associations__: {}
+        });
         instance.__dbrefs__ = {};
-        instance.__associations__ = {};
 
-        var assocs = instance.getAssociations();
-        for (var assocName in assocs) {
-            var assoc = assocs[assocName];
-            var fk = assoc.foreignKey || null;
-            var inverseOf = assoc.inverseOf || null;
-            
-            if (assoc.type === Syrah.HasMany) {
-                assocObject = Syrah.HasManyCollection.create({
-                    inverseOf: inverseOf,
-                    content: [],
-                    owner: instance,
-                    foreignKey: fk
-                });
-            } else {
-                assocObject = Syrah.BelongsTo.create({
-                    inverseOf: inverseOf,
-                    target: null,
-                    owner: instance,
-                    foreignKey: fk
-                });
-            }
-            instance.__associations__[assocName] = assocObject;
-        }
+        instance.setProperties(data);
 
         return instance;
     },
@@ -318,7 +297,31 @@ Syrah.Model.reopen({
     },
 
     getAssociationObject: function(assocName) {
-        return this.__associations__[assocName];
+        if (this.__associations__[assocName] === undefined) {
+            var prop = this.getPropertyDefinition(assocName);
+            var fk = prop.foreignKey || null;
+            var inverseOf = prop.inverseOf || null;
+            var assocObject;
+            
+            if (prop.type === Syrah.HasMany) {
+                assocObject = Syrah.HasManyCollection.create({
+                    inverseOf: inverseOf,
+                    content: [],
+                    owner: this,
+                    foreignKey: fk
+                });
+            } else {
+                assocObject = Syrah.BelongsTo.create({
+                    inverseOf: inverseOf,
+                    target: null,
+                    owner: this,
+                    foreignKey: fk
+                });
+            }
+
+            this.__associations__[assocName] = assocObject;
+        }
+        return this.__associations__[assocName]
     },
 
     getAssociations: function() {
