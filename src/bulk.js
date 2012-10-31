@@ -38,7 +38,7 @@ Syrah.Bulk = Ember.Object.extend({
                 json.pushObject(store.toJSON(object));
             });
             var callbacks = this.prepareCallbacks(store.didAddObjects, bucket[type], options);
-            store.ds.addInBulk(Ember.getPath(type), json, callbacks[0], callbacks[1]);
+            store.ds.addInBulk(Ember.get(type), json, callbacks[0], callbacks[1]);
         }
     },
 
@@ -51,7 +51,7 @@ Syrah.Bulk = Ember.Object.extend({
                 json.pushObject(store.toJSON(object));
             });
             var callbacks = this.prepareCallbacks(store.didUpdateObjects, bucket[type], options);
-            store.ds.updateInBulk(Ember.getPath(type), json, callbacks[0], callbacks[1]);
+            store.ds.updateInBulk(Ember.get(type), json, callbacks[0], callbacks[1]);
         }
     },
 
@@ -64,7 +64,7 @@ Syrah.Bulk = Ember.Object.extend({
                 json.push(object.get('id'));
             });
             var callbacks = this.prepareCallbacks(store.didDestroyObjects, bucket[type], options);
-            store.ds.destroyInBulk(Ember.getPath(type), json, callbacks[0], callbacks[1]);
+            store.ds.destroyInBulk(Ember.get(type), json, callbacks[0], callbacks[1]);
         }
     },
 

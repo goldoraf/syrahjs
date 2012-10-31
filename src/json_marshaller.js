@@ -78,13 +78,13 @@ Syrah.JSONMarshaller = Ember.Object.extend({
 
             if (propDef.isAssociation === true) {
                 if (propDef.type === Syrah.HasMany && value instanceof Array) {
-                    var assocType = (Ember.typeOf(propDef.itemType) === 'string') ? Ember.getPath(propDef.itemType) : propDef.itemType;
+                    var assocType = (Ember.typeOf(propDef.itemType) === 'string') ? Ember.get(propDef.itemType) : propDef.itemType;
                     value.forEach(function(hash) {
                         // TODO : use replaceContent() or something like that
                         object.get(key).pushObject(this.unmarshallModel(hash, assocType.create()));
                     }, this);
                 } else if (value instanceof Object) {
-                    var assocType = (Ember.typeOf(propDef.type) === 'string') ? Ember.getPath(propDef.type) : propDef.type;
+                    var assocType = (Ember.typeOf(propDef.type) === 'string') ? Ember.get(propDef.type) : propDef.type;
                     object.set(key, this.unmarshallModel(value, assocType.create()))
                 }
             } else {
