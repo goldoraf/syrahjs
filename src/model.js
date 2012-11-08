@@ -53,6 +53,10 @@ Syrah.Model.reopenClass({
         });
         instance.__dbrefs__ = {};
 
+        if (data === undefined || data === {}) {
+            data = {isLoaded: false};
+        }
+
         instance.setProperties(data);
 
         return instance;

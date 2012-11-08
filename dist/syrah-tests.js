@@ -826,10 +826,41 @@ asyncTest("RESTApi DS has a isRequestSuccessful() method on which depends which 
 test("Store has a load() method to load in attributes in an object", function() {
 	var store = Syrah.Store.create();
 	var contact = Foo.Contact.create();
+
+    equal(contact.get("isLoaded"), false, "When a new Syrah object is created, its isLoaded property is set to false");
+
 	store.load(contact, { firstname: 'John', lastname: 'Doe' });
+
+    equal(contact.get("isLoaded"), true, "isLoaded is true once the store loaded the object");
+    equal(contact.get('phones').get("isLoaded"), false,
+        "A child collection that is not included in the JSON has a isLoaded property set to false");
 	
 	equal(contact.get('firstname'), 'John');
 	equal(contact.get('lastname'), 'Doe');
+});
+
+test("The store load() method works with a graph of objects", function() {
+    var store = Syrah.Store.create();
+    var contact = Foo.Contact.create();
+
+    store.load(contact, {
+        firstname: 'John',
+        lastname: 'Doe',
+        phones: [{ number: "+87654321", type: "mobile" }]
+    });
+
+    equal(contact.get('phones').get("isLoaded"), true,
+        "A child collection that is included in the JSON has a isLoaded property set to true");
+
+    equal(contact.get('phones').get('length'), 1);
+    equal(contact.get('phones').objectAt(0).get('number'), "+87654321");
+    equal(contact.get('phones').objectAt(0).get('type'), "mobile");
+});
+
+test("Store has a newCollection() method that returns an array with a isLoaded property set to false", function() {
+    var store = Syrah.Store.create(),
+        coll = store.newCollection();
+    equal(coll.get('isLoaded'), false);
 });
 
 test("Calling Store.findById() should invoke his datasource's findById() and return an object", function() {
@@ -851,13 +882,13 @@ test("Calling Store.findById() should invoke his datasource's findById() and ret
 
 test("Store has a loadMany() method to load in a collection of objects", function() {
 	var store = Syrah.Store.create();
-	var coll = Ember.A([]);
+	var coll = store.newCollection();
 	store.loadMany(Foo.Contact, coll, [
 	    { firstname: 'John', lastname: 'Doe' },
 	    { firstname: 'Jane', lastname: 'Doe' }
 	]);
-	
-	//equal(coll.length, 2);
+
+    ok(coll.get('isLoaded'));
 	equal(coll.objectAt(0).get('firstname'), 'John');
 	equal(coll.objectAt(1).get('firstname'), 'Jane');
 });
@@ -867,7 +898,7 @@ test("Calling Store.all() should invoke his datasource's all() and return an arr
 		all: function(type, collection, callback, store) {
 			ok(true, "DataSource.all() was called");
 			equal(store, currentStore, "DataSource.all() was called with the right store");
-			
+
 			var loadedColl = callback.call(store, type, collection, [
                 { firstname: 'John', lastname: 'Doe' },
 	            { firstname: 'Jane', lastname: 'Doe' }

@@ -39,7 +39,7 @@ Syrah.Store = Ember.Object.extend({
 		if (query === undefined) {
 			return this.all(type);
 		} else {
-            var collection = Ember.A([]);
+            var collection = this.newCollection();
             this.get('ds').find(type, collection, query, this.loadMany, this);
             return collection;
         }
@@ -52,7 +52,7 @@ Syrah.Store = Ember.Object.extend({
 	},
 	
 	all: function(type) {
-		var collection = Ember.A([]);
+        var collection = this.newCollection();
 		this.get('ds').all(type, collection, this.loadMany, this);
 		return collection;
 	},
@@ -67,12 +67,21 @@ Syrah.Store = Ember.Object.extend({
 			objects.push(this.load(type.create(), hash));
 		}, this);
 		collection.pushObjects(objects);
+        collection.set('isLoaded', true);
 		return collection;
 	},
 	
 	load: function(object, json) {
-		return this.get('marshaller').unmarshall(json, object);
+		object = this.get('marshaller').unmarshall(json, object);
+        object.set("isLoaded", true);
+        return object;
 	},
+
+    newCollection: function() {
+        var coll = Ember.A([]);
+        coll.set('isLoaded', false);
+        return coll;
+    },
 	
 	didAddObject: function(object, embedded, json) {
 		// The DS must provide an ID for the newly created object in the returned JSON

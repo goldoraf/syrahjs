@@ -55,6 +55,7 @@ Syrah.HasMany = Ember.ArrayProxy.extend({
     content: [],
     owner: null,
     foreignKey: null,
+    isLoaded: null,
 
     // TODO : rename/refacto ?
     pushInverseInstance: function(object) {
@@ -90,7 +91,8 @@ Syrah.HasMany.reopenClass({
             inverseOf: inverseOf,
             content: [],
             owner: owner,
-            foreignKey: fk
+            foreignKey: fk,
+            isLoaded: false
         });
     },
 

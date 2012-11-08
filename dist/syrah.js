@@ -264,6 +264,10 @@ Syrah.Model.reopenClass({
         });
         instance.__dbrefs__ = {};
 
+        if (data === undefined || data === {}) {
+            data = {isLoaded: false};
+        }
+
         instance.setProperties(data);
 
         return instance;
@@ -483,6 +487,7 @@ Syrah.HasMany = Ember.ArrayProxy.extend({
     content: [],
     owner: null,
     foreignKey: null,
+    isLoaded: null,
 
     // TODO : rename/refacto ?
     pushInverseInstance: function(object) {
@@ -518,7 +523,8 @@ Syrah.HasMany.reopenClass({
             inverseOf: inverseOf,
             content: [],
             owner: owner,
-            foreignKey: fk
+            foreignKey: fk,
+            isLoaded: false
         });
     },
 
@@ -613,11 +619,13 @@ Syrah.JSONMarshaller = Ember.Object.extend({
 
             if (propDef.isAssociation === true) {
                 if (propDef.type === Syrah.HasMany && value instanceof Array) {
-                    var assocType = (Ember.typeOf(propDef.itemType) === 'string') ? Ember.get(propDef.itemType) : propDef.itemType;
+                    var assocType = (Ember.typeOf(propDef.itemType) === 'string') ? Ember.get(propDef.itemType) : propDef.itemType,
+                        collection = object.get(key);
                     value.forEach(function(hash) {
                         // TODO : use replaceContent() or something like that
-                        object.get(key).pushObject(this.unmarshallModel(hash, assocType.create()));
+                        collection.pushObject(this.unmarshallModel(hash, assocType.create()));
                     }, this);
+                    collection.set("isLoaded", true);
                 } else if (value instanceof Object) {
                     var assocType = (Ember.typeOf(propDef.type) === 'string') ? Ember.get(propDef.type) : propDef.type;
                     object.set(key, this.unmarshallModel(value, assocType.create()))
@@ -820,7 +828,7 @@ Syrah.Store = Ember.Object.extend({
 		if (query === undefined) {
 			return this.all(type);
 		} else {
-            var collection = Ember.A([]);
+            var collection = this.newCollection();
             this.get('ds').find(type, collection, query, this.loadMany, this);
             return collection;
         }
@@ -833,7 +841,7 @@ Syrah.Store = Ember.Object.extend({
 	},
 	
 	all: function(type) {
-		var collection = Ember.A([]);
+        var collection = this.newCollection();
 		this.get('ds').all(type, collection, this.loadMany, this);
 		return collection;
 	},
@@ -848,12 +856,21 @@ Syrah.Store = Ember.Object.extend({
 			objects.push(this.load(type.create(), hash));
 		}, this);
 		collection.pushObjects(objects);
+        collection.set('isLoaded', true);
 		return collection;
 	},
 	
 	load: function(object, json) {
-		return this.get('marshaller').unmarshall(json, object);
+		object = this.get('marshaller').unmarshall(json, object);
+        object.set("isLoaded", true);
+        return object;
 	},
+
+    newCollection: function() {
+        var coll = Ember.A([]);
+        coll.set('isLoaded', false);
+        return coll;
+    },
 	
 	didAddObject: function(object, embedded, json) {
 		// The DS must provide an ID for the newly created object in the returned JSON
