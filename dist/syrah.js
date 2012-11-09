@@ -226,9 +226,9 @@ Syrah.Model = Ember.Object.extend({
 
 Syrah.Model.reopenClass({
     define: function(schema) {
-        var properties = {};
-        var propertiesMeta = {};
-        var primaryKey = 'id';
+        var properties = {},
+            propertiesMeta = {},
+            primaryKey = 'id';
 
         if (schema.hasOwnProperty('primaryKey')) {
             primaryKey = schema.primaryKey;
@@ -275,6 +275,25 @@ Syrah.Model.reopenClass({
 
     getPk: function() {
         return this.__metadata__.primaryKey;
+    },
+
+    getStore: function() {
+
+        if (this.store === undefined) {
+            var className = this.toString(),
+                namespace = Ember.get(className.substring(0, className.indexOf('.')));
+
+            this.store = namespace.get("store") || Syrah.SyrahDefaultStore;
+
+            if (this.store === undefined) {
+                throw new Error("No store found for " + this.toString() + '\n' +
+                    "Expected: " + namespace.toString() + ".store or Syrah.SyrahDefaultStore");
+            }
+            if (this.store.get("ds") === undefined) {
+                throw new Error("No datasource set in the store of " + this.toString());
+            }
+        }
+        return this.store;
     }
 });
 
@@ -300,10 +319,10 @@ Syrah.Model.reopen({
         return [this.getPrimaryKey()];
     },
 
-    getAssociationObject: function(assocName) {
+    getAssociationObject: function(assocName, initialData) {
         if (this.__associations__[assocName] === undefined) {
             var prop = this.getPropertyDefinition(assocName);
-            this.__associations__[assocName] = prop.assocType.createInstance(prop, this);
+            this.__associations__[assocName] = prop.assocType.createInstance(prop, this, initialData);
         }
         return this.__associations__[assocName]
     },
@@ -414,9 +433,7 @@ var expandPropertyDefinition = function(name, definition) {
         if (definition.foreignKey === undefined) {
             definition.foreignKey = Syrah.Inflector.getFkForType(definition.type);
         }
-    }
-
-    if (definition.type === Syrah.HasMany) {
+    } else if (definition.type === Syrah.HasMany) {
         Ember.assert("A HasMany must have an itemType", definition.itemType !== undefined);
         definition.isAssociation = true;
         definition.assocType = Syrah.HasMany;
@@ -511,26 +528,44 @@ Syrah.HasMany = Ember.ArrayProxy.extend({
 
     replaceTarget: function(value) {
         //this.set('content', value);
+    },
+
+    getItemType: function(key) {
+        var itemType = this.get("owner").getPropertyDefinition(key).itemType;
+        itemType = (Ember.typeOf(itemType) === 'string') ? Ember.get(itemType) : itemType;
+        return itemType;
     }
 });
 
 Syrah.HasMany.reopenClass({
-    createInstance: function(options, owner) {
+    createInstance: function(options, owner, initialData) {
         var fk = options.foreignKey || Syrah.Inflector.getFkForType(owner.constructor),
-            inverseOf = options.inverseOf || null;
+            inverseOf = options.inverseOf || null,
+            content = initialData || [],
+            isLoaded = (initialData !== undefined);
 
         return Syrah.HasMany.create({
             inverseOf: inverseOf,
-            content: [],
+            content: content,
             owner: owner,
             foreignKey: fk,
-            isLoaded: false
+            isLoaded: isLoaded
         });
     },
 
     getComputedProperty: function() {
         return Ember.computed(function(key, value) {
-            return this.getAssociationObject(key);
+            if (arguments.length === 2) {
+                return this.getAssociationObject(key, value);
+            }
+            var result = this.getAssociationObject(key);
+            if (result.get("isLoaded") === false) {
+                var itemType = result.getItemType(key),
+                    parent = result.get("owner");
+
+                itemType.getStore().lazyMany(parent.constructor, parent.get("id"), itemType, result);
+            }
+            return result;
         }).property();
     }
 })
@@ -619,13 +654,12 @@ Syrah.JSONMarshaller = Ember.Object.extend({
 
             if (propDef.isAssociation === true) {
                 if (propDef.type === Syrah.HasMany && value instanceof Array) {
-                    var assocType = (Ember.typeOf(propDef.itemType) === 'string') ? Ember.get(propDef.itemType) : propDef.itemType,
-                        collection = object.get(key);
-                    value.forEach(function(hash) {
-                        // TODO : use replaceContent() or something like that
-                        collection.pushObject(this.unmarshallModel(hash, assocType.create()));
-                    }, this);
-                    collection.set("isLoaded", true);
+                    var assocType = (Ember.typeOf(propDef.itemType) === 'string') ? Ember.get(propDef.itemType) : propDef.itemType;
+
+                    object.set(key, value.map(function(hash) {
+                        return this.unmarshallModel(hash, assocType.create());
+                    }, this));
+
                 } else if (value instanceof Object) {
                     var assocType = (Ember.typeOf(propDef.type) === 'string') ? Ember.get(propDef.type) : propDef.type;
                     object.set(key, this.unmarshallModel(value, assocType.create()))
@@ -639,6 +673,7 @@ Syrah.JSONMarshaller = Ember.Object.extend({
             }
         }
         object.setProperties(stdPropsValues);
+        object.set("isLoaded", true);
         object.endPropertyChanges();
         return object;
     },
@@ -846,24 +881,27 @@ Syrah.Store = Ember.Object.extend({
 		return collection;
 	},
 
+    lazyMany: function(parentType, parentId, itemType, collection) {
+        this.get('ds').lazyMany(parentType, parentId, itemType, collection, this.loadMany, this);
+        return collection;
+    },
+
     bulk: function() {
         return Syrah.Bulk.create({ store: this });
     },
 	
 	loadMany: function(type, collection, data) {
-		var objects = [];
+        collection.beginPropertyChanges();
 		data.forEach(function(hash) {
-			objects.push(this.load(type.create(), hash));
+            collection.push(this.load(type.create(), hash));
 		}, this);
-		collection.pushObjects(objects);
         collection.set('isLoaded', true);
-		return collection;
+        collection.endPropertyChanges();
+        return collection;
 	},
 	
 	load: function(object, json) {
-		object = this.get('marshaller').unmarshall(json, object);
-        object.set("isLoaded", true);
-        return object;
+		return this.get('marshaller').unmarshall(json, object);
 	},
 
     newCollection: function() {
@@ -1009,6 +1047,14 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
 			}
 		});
 	},
+
+    lazyMany: function(parentType, parentId, itemType, collection, callback, store) {
+        this.ajax(itemType, this.buildUrl(parentType) + '/' + parentId + '/' + this.getCollectionName(itemType), 'GET', {
+            success: function(json) {
+                callback.call(store, itemType, collection, json);
+            }
+        });
+    },
 
     find: function(type, collection, query, callback, store) {
         this.ajax(type, this.buildUrl(type), 'GET', {

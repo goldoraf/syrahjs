@@ -1,6 +1,7 @@
 module('Associations test', {
     setup: function() {
         window.Foo = Ember.Namespace.create();
+        Foo.store = Syrah.Store.create({ds: Syrah.IdentityDataSource.create()});
         Foo.Phone = Syrah.Model.define({
             type: String,
             number: String

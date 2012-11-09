@@ -79,26 +79,44 @@ Syrah.HasMany = Ember.ArrayProxy.extend({
 
     replaceTarget: function(value) {
         //this.set('content', value);
+    },
+
+    getItemType: function(key) {
+        var itemType = this.get("owner").getPropertyDefinition(key).itemType;
+        itemType = (Ember.typeOf(itemType) === 'string') ? Ember.get(itemType) : itemType;
+        return itemType;
     }
 });
 
 Syrah.HasMany.reopenClass({
-    createInstance: function(options, owner) {
+    createInstance: function(options, owner, initialData) {
         var fk = options.foreignKey || Syrah.Inflector.getFkForType(owner.constructor),
-            inverseOf = options.inverseOf || null;
+            inverseOf = options.inverseOf || null,
+            content = initialData || [],
+            isLoaded = (initialData !== undefined);
 
         return Syrah.HasMany.create({
             inverseOf: inverseOf,
-            content: [],
+            content: content,
             owner: owner,
             foreignKey: fk,
-            isLoaded: false
+            isLoaded: isLoaded
         });
     },
 
     getComputedProperty: function() {
         return Ember.computed(function(key, value) {
-            return this.getAssociationObject(key);
+            if (arguments.length === 2) {
+                return this.getAssociationObject(key, value);
+            }
+            var result = this.getAssociationObject(key);
+            if (result.get("isLoaded") === false) {
+                var itemType = result.getItemType(key),
+                    parent = result.get("owner");
+
+                itemType.getStore().lazyMany(parent.constructor, parent.get("id"), itemType, result);
+            }
+            return result;
         }).property();
     }
 })

@@ -72,6 +72,15 @@ test("Fetching an object by id makes a GET to /contacts/[id]", function() {
 	expectMethod('GET');
 });
 
+test("Lazy loading of a child collection makes a GET to /contacts/[id]/phones", function() {
+    var store = Foo.store = Syrah.Store.create({ds:spiedDS});
+    var contact = Foo.Contact.create({id: '12345', firstname: 'John', lastname: 'Doe'});
+    contact.get('phones');
+
+    expectUrl('/contacts/12345/phones');
+    expectMethod('GET');
+});
+
 test("Adding an object makes a POST to /contacts", function() {
 	var store = Syrah.Store.create({ds:spiedDS});
 	store.add(Foo.Contact.create({ firstname: 'John', lastname: 'Doe' }));
@@ -94,7 +103,7 @@ test("Updating an object makes a PUT to /contacts/[id]", function() {
 
 test("Data can be urlencoded too", function() {
     spiedDS.set('urlEncodeData', true);
-    var store = Syrah.Store.create({ds:spiedDS});
+    var store = Foo.store = Syrah.Store.create({ds:spiedDS});
     store.add(Foo.Contact.create({ firstname: 'John', lastname: 'Doe' }));
 
     expectData("contact.firstname=John&contact.lastname=Doe");

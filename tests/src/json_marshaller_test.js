@@ -100,7 +100,7 @@ test("Model with HasMany association (un)marshalling", function() {
     deepEqual(generatedJson, json);
 
     var ab = Bar.Addressbook.create({ name: "My contacts" });
-    ab.get('contacts').pushObject(loadedContact);
+    ab.set('contacts', [loadedContact]);
     var generatedJson = marshaller.marshall(ab, { embedded: ['contacts', 'contacts.phones'] });
     var expectedJson = { name: "My contacts", contacts:[{ name: "John", phones:[{ number: "+12345678"}, { number: "+87654321" }]}]}
     deepEqual(generatedJson, expectedJson, "Associations of embedded associations can also be embedded");

@@ -57,24 +57,27 @@ Syrah.Store = Ember.Object.extend({
 		return collection;
 	},
 
+    lazyMany: function(parentType, parentId, itemType, collection) {
+        this.get('ds').lazyMany(parentType, parentId, itemType, collection, this.loadMany, this);
+        return collection;
+    },
+
     bulk: function() {
         return Syrah.Bulk.create({ store: this });
     },
 	
 	loadMany: function(type, collection, data) {
-		var objects = [];
+        collection.beginPropertyChanges();
 		data.forEach(function(hash) {
-			objects.push(this.load(type.create(), hash));
+            collection.push(this.load(type.create(), hash));
 		}, this);
-		collection.pushObjects(objects);
         collection.set('isLoaded', true);
-		return collection;
+        collection.endPropertyChanges();
+        return collection;
 	},
 	
 	load: function(object, json) {
-		object = this.get('marshaller').unmarshall(json, object);
-        object.set("isLoaded", true);
-        return object;
+		return this.get('marshaller').unmarshall(json, object);
 	},
 
     newCollection: function() {

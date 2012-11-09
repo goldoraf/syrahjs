@@ -1,6 +1,7 @@
 module('Associations test', {
     setup: function() {
         window.Foo = Ember.Namespace.create();
+        Foo.store = Syrah.Store.create({ds: Syrah.IdentityDataSource.create()});
         Foo.Phone = Syrah.Model.define({
             type: String,
             number: String
@@ -192,7 +193,48 @@ test("Committing a bulk with deleted objects should invoke his store's datasourc
     bulk.destroy(contact1);
     bulk.destroy(contact2);
     bulk.commit({ success: [store.additionalCallback, store] });
-});module('Inflector tests', {
+});Syrah.IdentityDataSource = Syrah.DataSource.extend({
+
+	all: function(type, collection, callback, store) {
+        Ember.run.next(function() {
+            callback.call(store, type, collection, []);
+        });
+		return collection;
+	},
+	
+	findById: function(type, object, id, callback, store) {
+        Ember.run.next(function() {
+            callback.call(store, object, {});
+        });
+		return object;
+	},
+	
+	add: function(type, json, successCallbacks, errorCallbacks) {
+        Ember.run.next(function() {
+            this.executeCallbacks(successCallbacks, {});
+        });
+	},
+	
+	update: function(type, json, successCallbacks, errorCallbacks) {
+        Ember.run.next(function() {
+            this.executeCallbacks(successCallbacks, {});
+        });
+	},
+	
+	destroy: function(type, json, successCallbacks, errorCallbacks) {
+        Ember.run.next(function() {
+            this.executeCallbacks(successCallbacks, {});
+        });
+	},
+
+    lazyMany: function(parentType, parentId, itemType, collection, callback, store) {
+        Ember.run.next(function() {
+            callback.call(store, itemType, collection, []);
+        });
+    }
+	
+});
+module('Inflector tests', {
 	setup: function() {
 		window.Foo = Ember.Namespace.create();
 		Foo.BarTest = Ember.Object.extend();
@@ -337,7 +379,7 @@ test("Model with HasMany association (un)marshalling", function() {
     deepEqual(generatedJson, json);
 
     var ab = Bar.Addressbook.create({ name: "My contacts" });
-    ab.get('contacts').pushObject(loadedContact);
+    ab.set('contacts', [loadedContact]);
     var generatedJson = marshaller.marshall(ab, { embedded: ['contacts', 'contacts.phones'] });
     var expectedJson = { name: "My contacts", contacts:[{ name: "John", phones:[{ number: "+12345678"}, { number: "+87654321" }]}]}
     deepEqual(generatedJson, expectedJson, "Associations of embedded associations can also be embedded");
@@ -454,6 +496,7 @@ test("LocalStorage DS can destroy an object", function() {
 module('Model definition test', {
 	setup: function() {
         window.Foo = Ember.Namespace.create();
+        Foo.store = Syrah.Store.create({ds: Syrah.IdentityDataSource.create()});
         Foo.Addressbook = Syrah.Model.define({
             name: String,
             contacts: {
@@ -621,6 +664,15 @@ test("Fetching an object by id makes a GET to /contacts/[id]", function() {
 	expectMethod('GET');
 });
 
+test("Lazy loading of a child collection makes a GET to /contacts/[id]/phones", function() {
+    var store = Foo.store = Syrah.Store.create({ds:spiedDS});
+    var contact = Foo.Contact.create({id: '12345', firstname: 'John', lastname: 'Doe'});
+    contact.get('phones');
+
+    expectUrl('/contacts/12345/phones');
+    expectMethod('GET');
+});
+
 test("Adding an object makes a POST to /contacts", function() {
 	var store = Syrah.Store.create({ds:spiedDS});
 	store.add(Foo.Contact.create({ firstname: 'John', lastname: 'Doe' }));
@@ -643,7 +695,7 @@ test("Updating an object makes a PUT to /contacts/[id]", function() {
 
 test("Data can be urlencoded too", function() {
     spiedDS.set('urlEncodeData', true);
-    var store = Syrah.Store.create({ds:spiedDS});
+    var store = Foo.store = Syrah.Store.create({ds:spiedDS});
     store.add(Foo.Contact.create({ firstname: 'John', lastname: 'Doe' }));
 
     expectData("contact.firstname=John&contact.lastname=Doe");
@@ -797,6 +849,7 @@ asyncTest("RESTApi DS has a isRequestSuccessful() method on which depends which 
     mockedDS.ajax(Foo.Contact, '/contacts', 'GET', {}, [[mockedDS.dummySuccessCallback, mockedDS]], [[mockedDS.dummyErrorCallback, mockedDS]]);
 });module('Store tests', {
 	setup: function() {
+        console.log("setup");
 		window.Foo = Ember.Namespace.create();
         Foo.Addressbook = Syrah.Model.define({
             name: String,
@@ -824,7 +877,7 @@ asyncTest("RESTApi DS has a isRequestSuccessful() method on which depends which 
 });
 
 test("Store has a load() method to load in attributes in an object", function() {
-	var store = Syrah.Store.create();
+	var store = Foo.store = Syrah.Store.create({ds: Syrah.IdentityDataSource.create()});
 	var contact = Foo.Contact.create();
 
     equal(contact.get("isLoaded"), false, "When a new Syrah object is created, its isLoaded property is set to false");
@@ -833,14 +886,16 @@ test("Store has a load() method to load in attributes in an object", function() 
 
     equal(contact.get("isLoaded"), true, "isLoaded is true once the store loaded the object");
     equal(contact.get('phones').get("isLoaded"), false,
-        "A child collection that is not included in the JSON has a isLoaded property set to false");
-	
+        "A HasMany association not included in the JSON has a isLoaded property set to false");
+  /*  equal(contact.get('addressbook').get("isLoaded"), false,
+        "A BelongsTo association not included in the JSON has a isLoaded property set to false");
+	*/
 	equal(contact.get('firstname'), 'John');
 	equal(contact.get('lastname'), 'Doe');
 });
 
 test("The store load() method works with a graph of objects", function() {
-    var store = Syrah.Store.create();
+    var store = Foo.store = Syrah.Store.create();
     var contact = Foo.Contact.create();
 
     store.load(contact, {
@@ -850,16 +905,17 @@ test("The store load() method works with a graph of objects", function() {
     });
 
     equal(contact.get('phones').get("isLoaded"), true,
-        "A child collection that is included in the JSON has a isLoaded property set to true");
+        "A HasMany association included in the JSON has a isLoaded property set to true");
 
     equal(contact.get('phones').get('length'), 1);
     equal(contact.get('phones').objectAt(0).get('number'), "+87654321");
     equal(contact.get('phones').objectAt(0).get('type'), "mobile");
+
 });
 
 test("Store has a newCollection() method that returns an array with a isLoaded property set to false", function() {
-    var store = Syrah.Store.create(),
-        coll = store.newCollection();
+    var store = Foo.store = Syrah.Store.create();
+    var coll = store.newCollection();
     equal(coll.get('isLoaded'), false);
 });
 
@@ -874,21 +930,43 @@ test("Calling Store.findById() should invoke his datasource's findById() and ret
 		}
 	});
 	
-	var currentStore = Syrah.Store.create({ ds: ds });
+	var currentStore = Foo.store = Syrah.Store.create({ ds: ds });
 	var returnedObject = currentStore.findById(Foo.Contact, 1);
 	
 	ok(returnedObject instanceof Foo.Contact, "Store.findById() returned an object");
 });
 
+asyncTest("Associations are fetched lazily if not provided", function() {
+    var ds = Syrah.IdentityDataSource.extend({
+        lazyMany: function(parentType, parentId, itemType, collection, callback, store) {
+            collection.pushObject(Foo.Phone.create({ number: "+87654321", type: "mobile" }));
+            return collection;
+        }
+    }).create();
+
+    var store = Foo.store = Syrah.Store.create({ ds: ds });
+
+    var contact = Foo.Contact.create();
+
+    store.load(contact, { firstname: 'John', lastname: 'Doe' });
+
+    var phones = contact.get("phones");
+
+    Ember.run.next(function() {
+        equal(phones.get("length"), 1, "Associations are fetched lazily");
+        start();
+    });
+});
+
 test("Store has a loadMany() method to load in a collection of objects", function() {
-	var store = Syrah.Store.create();
+	var store = Foo.store = Syrah.Store.create();
 	var coll = store.newCollection();
 	store.loadMany(Foo.Contact, coll, [
 	    { firstname: 'John', lastname: 'Doe' },
 	    { firstname: 'Jane', lastname: 'Doe' }
 	]);
 
-    ok(coll.get('isLoaded'));
+	ok(coll.get('isLoaded'));
 	equal(coll.objectAt(0).get('firstname'), 'John');
 	equal(coll.objectAt(1).get('firstname'), 'Jane');
 });
@@ -908,14 +986,14 @@ test("Calling Store.all() should invoke his datasource's all() and return an arr
 		}
 	});
 	
-	var currentStore = Syrah.Store.create({ ds: ds });
+	var currentStore = Foo.store = Syrah.Store.create({ ds: ds });
 	var returnedCollection = currentStore.all(Foo.Contact);
 	
 	ok(returnedCollection instanceof Array, "Store.all() returned an array");
 });
 
 test("Store has a toJSON() method to retrieve an object's attributes' values", function() {
-	var store = Syrah.Store.create();
+	var store = Foo.store = Syrah.Store.create();
 	var contact = Foo.Contact.create({ firstname: 'John', lastname: 'Doe' });
 	
 	deepEqual(store.toJSON(contact), { firstname: 'John', lastname: 'Doe' });
@@ -929,7 +1007,7 @@ test("Calling Store.add() should invoke his datasource's add()", function() {
 		}
 	});
 	
-	var currentStore = Syrah.Store.create({ ds: ds });
+	var currentStore = Foo.store = Syrah.Store.create({ ds: ds });
 	currentStore.reopen({
 		didAddObject: function(object, embedded, json) {
 			ok(true, "Store callback didAddObject() was called");
@@ -945,7 +1023,7 @@ test("Calling Store.add() should invoke his datasource's add()", function() {
 });
 
 test("Store has a didAddObject() callback that sets the object's id when provided in the hash", function() {
-	var store = Syrah.Store.create();
+	var store = Foo.store = Syrah.Store.create();
 	var contact = Foo.Contact.create({ firstname: 'John', lastname: 'Doe' });
 	
 	store.didAddObject(contact, [], { id: 12345 });
@@ -953,7 +1031,7 @@ test("Store has a didAddObject() callback that sets the object's id when provide
 });
 
 test("Store has a didAddObject() callback that sets all of an object graph's IDs when the 'embedded' option is used", function() {
-    var store = Syrah.Store.create();
+    var store = Foo.store = Syrah.Store.create({ds: Syrah.IdentityDataSource.create()});
     var ab = Foo.Addressbook.create({ name: "My contacts" });
     var contact1 = Foo.Contact.create({ firstname: 'John', lastname: 'Doe' });
     var phone1 = Foo.Phone.create({ number: "+12345678", type: "mobile" });
@@ -980,7 +1058,7 @@ test("Calling Store.update() should invoke his datasource's update()", function(
 		}
 	});
 	
-	var currentStore = Syrah.Store.create({ ds: ds });
+	var currentStore = Foo.store = Syrah.Store.create({ ds: ds });
 	currentStore.reopen({
 		didUpdateObject: function(object, json) {
 			ok(true, "Store callback didUpdateObject() was called");
@@ -1003,7 +1081,7 @@ test("Calling Store.destroy() should invoke his datasource's destroy()", functio
 		}
 	});
 	
-	var currentStore = Syrah.Store.create({ ds: ds });
+	var currentStore = Foo.store = Syrah.Store.create({ ds: ds });
 	currentStore.reopen({
 		didDestroyObject: function(object) {
 			ok(true, "Store callback didDestroyObject() was called");
@@ -1019,7 +1097,7 @@ test("Calling Store.destroy() should invoke his datasource's destroy()", functio
 });
 
 test("Store has a didDestroyObject() that destroys the object", function() {
-	var store = Syrah.Store.create();
+	var store = Foo.store = Syrah.Store.create();
 	var contact = Foo.Contact.create({ firstname: 'John', lastname: 'Doe' });
 	
 	store.didDestroyObject(contact);

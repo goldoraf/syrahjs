@@ -15,9 +15,9 @@ Syrah.Model = Ember.Object.extend({
 
 Syrah.Model.reopenClass({
     define: function(schema) {
-        var properties = {};
-        var propertiesMeta = {};
-        var primaryKey = 'id';
+        var properties = {},
+            propertiesMeta = {},
+            primaryKey = 'id';
 
         if (schema.hasOwnProperty('primaryKey')) {
             primaryKey = schema.primaryKey;
@@ -64,6 +64,25 @@ Syrah.Model.reopenClass({
 
     getPk: function() {
         return this.__metadata__.primaryKey;
+    },
+
+    getStore: function() {
+
+        if (this.store === undefined) {
+            var className = this.toString(),
+                namespace = Ember.get(className.substring(0, className.indexOf('.')));
+
+            this.store = namespace.get("store") || Syrah.SyrahDefaultStore;
+
+            if (this.store === undefined) {
+                throw new Error("No store found for " + this.toString() + '\n' +
+                    "Expected: " + namespace.toString() + ".store or Syrah.SyrahDefaultStore");
+            }
+            if (this.store.get("ds") === undefined) {
+                throw new Error("No datasource set in the store of " + this.toString());
+            }
+        }
+        return this.store;
     }
 });
 
@@ -89,10 +108,10 @@ Syrah.Model.reopen({
         return [this.getPrimaryKey()];
     },
 
-    getAssociationObject: function(assocName) {
+    getAssociationObject: function(assocName, initialData) {
         if (this.__associations__[assocName] === undefined) {
             var prop = this.getPropertyDefinition(assocName);
-            this.__associations__[assocName] = prop.assocType.createInstance(prop, this);
+            this.__associations__[assocName] = prop.assocType.createInstance(prop, this, initialData);
         }
         return this.__associations__[assocName]
     },
@@ -203,9 +222,7 @@ var expandPropertyDefinition = function(name, definition) {
         if (definition.foreignKey === undefined) {
             definition.foreignKey = Syrah.Inflector.getFkForType(definition.type);
         }
-    }
-
-    if (definition.type === Syrah.HasMany) {
+    } else if (definition.type === Syrah.HasMany) {
         Ember.assert("A HasMany must have an itemType", definition.itemType !== undefined);
         definition.isAssociation = true;
         definition.assocType = Syrah.HasMany;

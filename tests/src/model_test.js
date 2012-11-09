@@ -1,6 +1,7 @@
 module('Model definition test', {
 	setup: function() {
         window.Foo = Ember.Namespace.create();
+        Foo.store = Syrah.Store.create({ds: Syrah.IdentityDataSource.create()});
         Foo.Addressbook = Syrah.Model.define({
             name: String,
             contacts: {
