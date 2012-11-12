@@ -1,6 +1,6 @@
 module("JSON Marshaller tests", {
 	setup: function() {
-		marshaller = Syrah.JSONMarshaller.create();
+		marshaller = Syrah.Store.create();
 		
 		window.Foo = Ember.Namespace.create();
 		Foo.Contact = Ember.Object.extend({

@@ -288,7 +288,7 @@ test("Inflector has a getFkForType() method to get a FK from a type", function()
     equal(Syrah.Inflector.getFkForType(Foo.Contact), 'contact_id');
 });module("JSON Marshaller tests", {
 	setup: function() {
-		marshaller = Syrah.JSONMarshaller.create();
+		marshaller = Syrah.Store.create();
 		
 		window.Foo = Ember.Namespace.create();
 		Foo.Contact = Ember.Object.extend({
@@ -867,7 +867,6 @@ asyncTest("RESTApi DS has a isRequestSuccessful() method on which depends which 
     mockedDS.ajax(Foo.Contact, '/contacts', 'GET', {}, [[mockedDS.dummySuccessCallback, mockedDS]], [[mockedDS.dummyErrorCallback, mockedDS]]);
 });module('Store tests', {
 	setup: function() {
-        console.log("setup");
 		window.Foo = Ember.Namespace.create();
         Foo.Addressbook = Syrah.Model.define({
             name: String,

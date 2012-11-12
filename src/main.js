@@ -4,7 +4,6 @@ require("inflector");
 require("typecasting");
 require("model");
 require("associations");
-require("json_marshaller");
 require("bulk");
 require("store");
 require("datasource");

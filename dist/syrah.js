@@ -585,13 +585,111 @@ Syrah.HasMany.reopenClass({
 
 
 (function() {
-Syrah.JSONMarshaller = Ember.Object.extend({
+Syrah.Bulk = Ember.Object.extend({
+    store: null,
+    created: null,
+    updated: null,
+    deleted: null,
+
+    init: function() {
+        this._super();
+        this.emptyBuckets();
+    },
+
+    save: function(object) {
+        if (object.isNew()) {
+            this.pushObjectInBucket('created', object);
+        } else {
+            this.pushObjectInBucket('updated', object);
+        }
+    },
+
+    destroy: function(object) {
+        this.pushObjectInBucket('deleted', object);
+    },
+
+    commit: function(options) {
+        this.commitCreated(options);
+        this.commitUpdated(options);
+        this.commitDeleted(options);
+
+        this.emptyBuckets();
+    },
+
+    commitCreated: function(options) {
+        var store = this.get('store');
+        var bucket = this.get('created');
+        for (var type in bucket) {
+            var json = [];
+            bucket[type].forEach(function(object) {
+                json.pushObject(store.toJSON(object));
+            });
+            var callbacks = this.prepareCallbacks(store.didAddObjects, bucket[type], options);
+            store.ds.addInBulk(Ember.get(type), json, callbacks[0], callbacks[1]);
+        }
+    },
+
+    commitUpdated: function(options) {
+        var store = this.get('store');
+        var bucket = this.get('updated');
+        for (var type in bucket) {
+            var json = [];
+            bucket[type].forEach(function(object) {
+                json.pushObject(store.toJSON(object));
+            });
+            var callbacks = this.prepareCallbacks(store.didUpdateObjects, bucket[type], options);
+            store.ds.updateInBulk(Ember.get(type), json, callbacks[0], callbacks[1]);
+        }
+    },
+
+    commitDeleted: function(options) {
+        var store = this.get('store');
+        var bucket = this.get('deleted');
+        for (var type in bucket) {
+            var json = [];
+            bucket[type].forEach(function(object) {
+                json.push(object.get('id'));
+            });
+            var callbacks = this.prepareCallbacks(store.didDestroyObjects, bucket[type], options);
+            store.ds.destroyInBulk(Ember.get(type), json, callbacks[0], callbacks[1]);
+        }
+    },
+
+    pushObjectInBucket: function(bucketName, object) {
+        var bucket = this.get(bucketName),
+            type = object.constructor;
+
+        if (!bucket.hasOwnProperty(type)) bucket[type] = [];
+        bucket[type].pushObject(object);
+    },
+
+    prepareCallbacks: function(mainSuccessCallback, objects, options) {
+        var store = this.get('store');
+        var successCallbacks = store.prepareCallbacks([mainSuccessCallback, store, objects], options, 'success');
+        var errorCallbacks   = store.prepareCallbacks([store.didError, store, objects], options, 'error');
+        return [successCallbacks, errorCallbacks];
+    },
+
+    emptyBuckets: function() {
+        this.set('created', {});
+        this.set('updated', {});
+        this.set('deleted', {});
+    }
+});
+})();
+
+
+
+(function() {
+Syrah.Store = Ember.Object.extend({
 	
-	marshall: function(object, options) {
-		var options = options || {};
+	ds: null,
+
+    marshall: function(object, options) {
+        var options = options || {};
         if (object instanceof Syrah.Model) return this.marshallModel(object, options.embedded);
         return this.marshallSimpleObject(object);
-	},
+    },
 
     unmarshall: function(json, object) {
         if (object instanceof Syrah.Model) return this.unmarshallModel(json, object);
@@ -709,134 +807,27 @@ Syrah.JSONMarshaller = Ember.Object.extend({
 
         return json;
     },
-	
-	unmarshallSimpleObject: function(json, object) {
-		var props = {};
-		for (var k in json) {
-			v = json[k];
-			if (v instanceof Array) {
-				props[k] = Ember.A([]);
-				var assocType = Syrah.Inflector.guessAssociationType(k, object.constructor);
+
+    unmarshallSimpleObject: function(json, object) {
+        var props = {};
+        for (var k in json) {
+            v = json[k];
+            if (v instanceof Array) {
+                props[k] = Ember.A([]);
+                var assocType = Syrah.Inflector.guessAssociationType(k, object.constructor);
                 if (assocType === undefined) assocType = Ember.Object;
-				v.forEach(function(hash) {
-					props[k].push(this.unmarshall(hash, assocType.create()));
-				}, this);
-			} else {
-				props[k] = v;
-			}
-		}
-		object.beginPropertyChanges();
-		object.setProperties(props);
-		object.endPropertyChanges();
-		return object;
-	}
-});
-
-})();
-
-
-
-(function() {
-Syrah.Bulk = Ember.Object.extend({
-    store: null,
-    created: null,
-    updated: null,
-    deleted: null,
-
-    init: function() {
-        this._super();
-        this.emptyBuckets();
-    },
-
-    save: function(object) {
-        if (object.isNew()) {
-            this.pushObjectInBucket('created', object);
-        } else {
-            this.pushObjectInBucket('updated', object);
+                v.forEach(function(hash) {
+                    props[k].push(this.unmarshall(hash, assocType.create()));
+                }, this);
+            } else {
+                props[k] = v;
+            }
         }
+        object.beginPropertyChanges();
+        object.setProperties(props);
+        object.endPropertyChanges();
+        return object;
     },
-
-    destroy: function(object) {
-        this.pushObjectInBucket('deleted', object);
-    },
-
-    commit: function(options) {
-        this.commitCreated(options);
-        this.commitUpdated(options);
-        this.commitDeleted(options);
-
-        this.emptyBuckets();
-    },
-
-    commitCreated: function(options) {
-        var store = this.get('store');
-        var bucket = this.get('created');
-        for (var type in bucket) {
-            var json = [];
-            bucket[type].forEach(function(object) {
-                json.pushObject(store.toJSON(object));
-            });
-            var callbacks = this.prepareCallbacks(store.didAddObjects, bucket[type], options);
-            store.ds.addInBulk(Ember.get(type), json, callbacks[0], callbacks[1]);
-        }
-    },
-
-    commitUpdated: function(options) {
-        var store = this.get('store');
-        var bucket = this.get('updated');
-        for (var type in bucket) {
-            var json = [];
-            bucket[type].forEach(function(object) {
-                json.pushObject(store.toJSON(object));
-            });
-            var callbacks = this.prepareCallbacks(store.didUpdateObjects, bucket[type], options);
-            store.ds.updateInBulk(Ember.get(type), json, callbacks[0], callbacks[1]);
-        }
-    },
-
-    commitDeleted: function(options) {
-        var store = this.get('store');
-        var bucket = this.get('deleted');
-        for (var type in bucket) {
-            var json = [];
-            bucket[type].forEach(function(object) {
-                json.push(object.get('id'));
-            });
-            var callbacks = this.prepareCallbacks(store.didDestroyObjects, bucket[type], options);
-            store.ds.destroyInBulk(Ember.get(type), json, callbacks[0], callbacks[1]);
-        }
-    },
-
-    pushObjectInBucket: function(bucketName, object) {
-        var bucket = this.get(bucketName),
-            type = object.constructor;
-
-        if (!bucket.hasOwnProperty(type)) bucket[type] = [];
-        bucket[type].pushObject(object);
-    },
-
-    prepareCallbacks: function(mainSuccessCallback, objects, options) {
-        var store = this.get('store');
-        var successCallbacks = store.prepareCallbacks([mainSuccessCallback, store, objects], options, 'success');
-        var errorCallbacks   = store.prepareCallbacks([store.didError, store, objects], options, 'error');
-        return [successCallbacks, errorCallbacks];
-    },
-
-    emptyBuckets: function() {
-        this.set('created', {});
-        this.set('updated', {});
-        this.set('deleted', {});
-    }
-});
-})();
-
-
-
-(function() {
-Syrah.Store = Ember.Object.extend({
-	
-	ds: null,
-	marshaller: Syrah.JSONMarshaller.create(),
 
     save: function(object, options) {
         if (object.isNew()) {
@@ -917,7 +908,7 @@ Syrah.Store = Ember.Object.extend({
 	},
 	
 	load: function(object, json) {
-		return this.get('marshaller').unmarshall(json, object);
+		return this.unmarshall(json, object);
 	},
 
     newCollection: function() {
@@ -1004,7 +995,7 @@ Syrah.Store = Ember.Object.extend({
     },
 	
 	toJSON: function(object, options) {
-		return this.get('marshaller').marshall(object, options);
+		return this.marshall(object, options);
 	},
 
     prepareCallbacks: function(firstCallback, options, optionKey) {
