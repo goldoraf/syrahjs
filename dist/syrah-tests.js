@@ -371,7 +371,7 @@ test("Model with HasMany association (un)marshalling", function() {
         name: 'John',
         phones: [
             { number: "+12345678" },
-            { number: "+87654321" },
+            { number: "+87654321" }
         ]
     };
     var loadedContact = marshaller.unmarshall(json, Bar.Contact.create());
@@ -383,13 +383,13 @@ test("Model with HasMany association (un)marshalling", function() {
     var generatedJson = marshaller.marshall(loadedContact);
     ok(!generatedJson.hasOwnProperty('phones'), "HasMany associations should not be marshalled by default");
 
-    var generatedJson = marshaller.marshall(loadedContact, { embedded: ['phones'] });
+    var generatedJson = marshaller.marshall(loadedContact, ['phones']);
     ok(generatedJson.hasOwnProperty('phones'), "HasMany associations can be marshalled when using the 'embedded' option");
     deepEqual(generatedJson, json);
 
     var ab = Bar.Addressbook.create({ name: "My contacts" });
     ab.set('contacts', [loadedContact]);
-    var generatedJson = marshaller.marshall(ab, { embedded: ['contacts', 'contacts.phones'] });
+    var generatedJson = marshaller.marshall(ab, ['contacts', 'contacts.phones']);
     var expectedJson = { name: "My contacts", contacts:[{ name: "John", phones:[{ number: "+12345678"}, { number: "+87654321" }]}]}
     deepEqual(generatedJson, expectedJson, "Associations of embedded associations can also be embedded");
 });

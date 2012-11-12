@@ -685,18 +685,8 @@ Syrah.Store = Ember.Object.extend({
 	
 	ds: null,
 
-    marshall: function(object, options) {
-        var options = options || {};
-        if (object instanceof Syrah.Model) return this.marshallModel(object, options.embedded);
-        return this.marshallSimpleObject(object);
-    },
-
-    unmarshall: function(json, object) {
-        if (object instanceof Syrah.Model) return this.unmarshallModel(json, object);
-        return this.unmarshallSimpleObject(json, object);
-    },
-
-    marshallModel: function(object, embedded) {
+    marshall: function(object, embedded) {
+        if (! object instanceof Syrah.Model) return; //TODO log or assert ??
         var primitiveProps = object.getPrimitiveProperties();
         var embeddedAssocs = embedded || [];
 
@@ -731,11 +721,11 @@ Syrah.Store = Ember.Object.extend({
             if (propDef.type === Syrah.HasMany) {
                 var value = [];
                 object.get(assocName).get('content').forEach(function(item) {
-                    value.push(this.marshallModel(item, filterSubEmbeddedAssocs(assocName)));
+                    value.push(this.marshall(item, filterSubEmbeddedAssocs(assocName)));
                 }, this);
                 data[assocName] = value;
             } else {
-                data[assocName] = this.marshallModel(object.get(assocName), filterSubEmbeddedAssocs(assocName));
+                data[assocName] = this.marshall(object.get(assocName), filterSubEmbeddedAssocs(assocName));
             }
         }
 
@@ -744,7 +734,8 @@ Syrah.Store = Ember.Object.extend({
         return data;
     },
 
-    unmarshallModel: function(json, object) {
+    unmarshall: function(json, object) {
+        if (! object instanceof Syrah.Model) return; //TODO log or assert ??
         var definedProps = object.getMetadata().definedProperties;
         var dbRefsPossibleKeys = object.getDbRefsPossibleKeys();
         var stdPropsValues = {};
@@ -765,13 +756,11 @@ Syrah.Store = Ember.Object.extend({
                 if (propDef.type === Syrah.HasMany && value instanceof Array) {
                     var assocType = (Ember.typeOf(propDef.itemType) === 'string') ? Ember.get(propDef.itemType) : propDef.itemType;
 
-                    object.set(key, value.map(function(hash) {
-                        return this.unmarshallModel(hash, assocType.create());
-                    }, this));
+                    object.set(key, this.loadMany(assocType, Ember.A(), value));
 
                 } else if (value instanceof Object) {
                     var assocType = (Ember.typeOf(propDef.type) === 'string') ? Ember.get(propDef.type) : propDef.type;
-                    object.set(key, this.unmarshallModel(value, assocType.create()))
+                    object.set(key, this.load(assocType.create(), value));
                 }
             } else {
                 var typecast = Syrah.typecastFor(propDef.type);
@@ -783,48 +772,6 @@ Syrah.Store = Ember.Object.extend({
         }
         object.setProperties(stdPropsValues);
         object.set("isLoaded", true);
-        object.endPropertyChanges();
-        return object;
-    },
-
-    // WARNING : this doesn't work in IE8... (*ALL* object properties are marshalled...)
-    marshallSimpleObject: function(object) {
-        var v, attrs = [];
-
-        for (var prop in object) {
-            if (object.hasOwnProperty(prop)) {
-                v = object[prop];
-                if (v === 'toString') {
-                    continue;
-                }
-                if (Ember.typeOf(v) === 'function') {
-                    continue;
-                }
-                attrs.push(prop);
-            }
-        }
-        var json = object.getProperties(attrs);
-
-        return json;
-    },
-
-    unmarshallSimpleObject: function(json, object) {
-        var props = {};
-        for (var k in json) {
-            v = json[k];
-            if (v instanceof Array) {
-                props[k] = Ember.A([]);
-                var assocType = Syrah.Inflector.guessAssociationType(k, object.constructor);
-                if (assocType === undefined) assocType = Ember.Object;
-                v.forEach(function(hash) {
-                    props[k].push(this.unmarshall(hash, assocType.create()));
-                }, this);
-            } else {
-                props[k] = v;
-            }
-        }
-        object.beginPropertyChanges();
-        object.setProperties(props);
         object.endPropertyChanges();
         return object;
     },
@@ -841,7 +788,7 @@ Syrah.Store = Ember.Object.extend({
         var embedded = options.embedded || [];
         var successCallbacks = this.prepareCallbacks([this.didAddObject, this, object, embedded], options, 'success');
         var errorCallbacks   = this.prepareCallbacks([this.didError, this, object], options, 'error');
-        this.get('ds').add(object.constructor, this.toJSON(object, options), successCallbacks, errorCallbacks);
+        this.get('ds').add(object.constructor, this.toJSON(object, embedded), successCallbacks, errorCallbacks);
 		return object;
 	},
 	
@@ -849,7 +796,7 @@ Syrah.Store = Ember.Object.extend({
         options = options || {};
         var successCallbacks = this.prepareCallbacks([this.didUpdateObject, this, object], options, 'success');
         var errorCallbacks   = this.prepareCallbacks([this.didError, this, object], options, 'error');
-        this.get('ds').update(object.constructor, this.toJSON(object, options), successCallbacks, errorCallbacks);
+        this.get('ds').update(object.constructor, this.toJSON(object, options.embedded), successCallbacks, errorCallbacks);
 		return object;
 	},
 	
@@ -857,7 +804,7 @@ Syrah.Store = Ember.Object.extend({
         options = options || {};
         var successCallbacks = this.prepareCallbacks([this.didDestroyObject, this, object], options, 'success');
         var errorCallbacks   = this.prepareCallbacks([this.didError, this, object], options, 'error');
-		this.get('ds').destroy(object.constructor, this.toJSON(object, options), successCallbacks, errorCallbacks);
+		this.get('ds').destroy(object.constructor, this.toJSON(object, options.embedded), successCallbacks, errorCallbacks);
 		return;
 	},
 	
@@ -994,8 +941,8 @@ Syrah.Store = Ember.Object.extend({
         // TODO : do something smart here...
     },
 	
-	toJSON: function(object, options) {
-		return this.marshall(object, options);
+	toJSON: function(object, embedded) {
+		return this.marshall(object, embedded);
 	},
 
     prepareCallbacks: function(firstCallback, options, optionKey) {
