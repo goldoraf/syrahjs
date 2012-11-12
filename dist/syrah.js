@@ -681,9 +681,18 @@ Syrah.Bulk = Ember.Object.extend({
 
 
 (function() {
+var addIfNotPresent = function(dict, key, value) {
+    if (dict[key] === undefined) {
+        return dict[key] = value;
+    } else {
+        return dict[key];
+    }
+}
+
 Syrah.Store = Ember.Object.extend({
 	
 	ds: null,
+    collections: {},
 
     marshall: function(object, embedded) {
         if (! object instanceof Syrah.Model) return; //TODO log or assert ??
@@ -819,7 +828,12 @@ Syrah.Store = Ember.Object.extend({
 	},
 	
 	findById: function(type, id) {
-		var object = type.create();
+		var cache = this.collections[type.toString()],
+            object = (cache !== undefined) ? cache[id.toString()] : undefined;
+        if (object !== undefined) {
+            return object;
+        }
+        object = type.create();
 		this.get('ds').findById(type, object, id, this.load, this);
 		return object;
 	},
@@ -855,8 +869,19 @@ Syrah.Store = Ember.Object.extend({
 	},
 	
 	load: function(object, json) {
-		return this.unmarshall(json, object);
+		object = this.unmarshall(json, object);
+        return object.get('id') === undefined ? object : this.attach(object);
 	},
+
+    attach: function(object) {
+        var collection = addIfNotPresent(this.collections, object.constructor.toString(), {});
+        return addIfNotPresent(collection, object.get('id').toString(), object);
+    },
+
+    detach: function(object) {
+        delete this.collections[object.constructor.toString()][object.get("id").toString()];
+        return object;
+    },
 
     newCollection: function() {
         var coll = Ember.A([]);
@@ -877,7 +902,7 @@ Syrah.Store = Ember.Object.extend({
             this.didAddEmbeddedObjects(object, embedded, json);
         }
 
-		return object;
+		return this.attach(object);
 	},
 
     didAddEmbeddedObjects: function(object, embedded, json) {
@@ -918,6 +943,9 @@ Syrah.Store = Ember.Object.extend({
 	},
 	
 	didDestroyObject: function(object) {
+        if (object.get('id') !== undefined) {
+            this.detach(object);
+        }
 		object.destroy();
 	},
 

@@ -942,7 +942,7 @@ test("Calling Store.findById() should invoke his datasource's findById() and ret
 			ok(true, "DataSource.findById() was called");
 			equal(store, currentStore, "DataSource.findById() was called with the right store");
 			
-			var loadedObject = callback.call(store, object, { firstname: 'John', lastname: 'Doe' });
+			var loadedObject = callback.call(store, object, {id: 1, firstname: 'John', lastname: 'Doe' });
 			equal(loadedObject.get('firstname'), 'John', "DataSource.findById() was called with a callback to Store.load()");
 		}
 	});
@@ -951,6 +951,7 @@ test("Calling Store.findById() should invoke his datasource's findById() and ret
 	var returnedObject = currentStore.findById(Foo.Contact, 1);
 	
 	ok(returnedObject instanceof Foo.Contact, "Store.findById() returned an object");
+    ok(returnedObject === currentStore.findById(Foo.Contact, 1), "Store.findById() returns the cached object if it exists");
 });
 
 asyncTest("Associations are fetched lazily if not provided", 1, function() {
@@ -1119,4 +1120,15 @@ test("Store has a didDestroyObject() that destroys the object", function() {
 	
 	store.didDestroyObject(contact);
 	ok(contact.isDestroyed == true, "The object has been destroyed");
+});
+
+test("Store has an attach() method to cache the loaded persistent objects", function() {
+    var store = Foo.store = Syrah.Store.create();
+    var contact = Foo.Contact.create({ id:007, firstname: 'John', lastname: 'Doe' });
+
+    store.attach(contact);
+
+    var book = store.load(Foo.Addressbook.create(), { name: "Secret agents", contacts: [{ id:007, firstname: 'John', lastname: 'Doe' }]});
+
+    ok(book.get('contacts').objectAt(0) === contact);
 });
