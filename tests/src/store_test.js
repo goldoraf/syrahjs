@@ -1,6 +1,5 @@
 module('Store tests', {
 	setup: function() {
-        console.log("setup");
 		window.Foo = Ember.Namespace.create();
         Foo.Addressbook = Syrah.Model.define({
             name: String,
