@@ -36,6 +36,12 @@ Syrah.IdentityDataSource = Syrah.DataSource.extend({
         Ember.run.next(function() {
             callback.call(store, itemType, collection, []);
         });
+    },
+
+    lazyOne: function(parentType, parentId, itemType, object, callback, store) {
+        Ember.run.next(function() {
+            callback.call(store, object, {});
+        });
     }
 	
 });

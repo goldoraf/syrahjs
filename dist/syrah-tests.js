@@ -66,12 +66,15 @@ test("HasMany association usage", function() {
 test("BelongsTo association usage", function() {
     var blog = Foo.Blog.create({ title: 'Ember & JS' });
     var author = Foo.Author.create({ id: 5678, name: 'John Doe' });
-    equal(blog.get('author'), null);
+    equal(blog.get('author').get('isLoaded'), false);
 
     blog.set('author', author);
 
     equal(blog.getDbRef('author_id'), 5678, "An object should maintain a FK to the object it belongs to");
     equal(blog.get('author').get('name'), 'John Doe', "The object it belongs to can be retrieved");
+
+    var anonymousBlog = Foo.Blog.create({ title: 'Ember & JS', author: null });
+    equal(anonymousBlog.get('author'), null);
 });
 
 test("Bi-directional associations", function() {
@@ -230,6 +233,12 @@ test("Committing a bulk with deleted objects should invoke his store's datasourc
     lazyMany: function(parentType, parentId, itemType, collection, callback, store) {
         Ember.run.next(function() {
             callback.call(store, itemType, collection, []);
+        });
+    },
+
+    lazyOne: function(parentType, parentId, itemType, object, callback, store) {
+        Ember.run.next(function() {
+            callback.call(store, object, {});
         });
     }
 	
@@ -673,6 +682,15 @@ test("Lazy loading of a child collection makes a GET to /contacts/[id]/phones", 
     expectMethod('GET');
 });
 
+test("Lazy loading of a child entity makes a GET to /contacts/[id]/adressbook", function() {
+    var store = Foo.store = Syrah.Store.create({ds:spiedDS});
+    var contact = Foo.Contact.create({id: '12345', firstname: 'John', lastname: 'Doe'});
+    contact.get('addressbook');
+
+    expectUrl('/contacts/12345/addressbook');
+    expectMethod('GET');
+});
+
 test("Adding an object makes a POST to /contacts", function() {
 	var store = Syrah.Store.create({ds:spiedDS});
 	store.add(Foo.Contact.create({ firstname: 'John', lastname: 'Doe' }));
@@ -887,9 +905,9 @@ test("Store has a load() method to load in attributes in an object", function() 
     equal(contact.get("isLoaded"), true, "isLoaded is true once the store loaded the object");
     equal(contact.get('phones').get("isLoaded"), false,
         "A HasMany association not included in the JSON has a isLoaded property set to false");
-  /*  equal(contact.get('addressbook').get("isLoaded"), false,
+    equal(contact.get('addressbook').get("isLoaded"), false,
         "A BelongsTo association not included in the JSON has a isLoaded property set to false");
-	*/
+
 	equal(contact.get('firstname'), 'John');
 	equal(contact.get('lastname'), 'Doe');
 });
@@ -936,7 +954,7 @@ test("Calling Store.findById() should invoke his datasource's findById() and ret
 	ok(returnedObject instanceof Foo.Contact, "Store.findById() returned an object");
 });
 
-asyncTest("Associations are fetched lazily if not provided", function() {
+asyncTest("Associations are fetched lazily if not provided", 1, function() {
     var ds = Syrah.IdentityDataSource.extend({
         lazyMany: function(parentType, parentId, itemType, collection, callback, store) {
             collection.pushObject(Foo.Phone.create({ number: "+87654321", type: "mobile" }));

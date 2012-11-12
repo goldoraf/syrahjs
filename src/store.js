@@ -62,6 +62,11 @@ Syrah.Store = Ember.Object.extend({
         return collection;
     },
 
+    lazyOne: function(parentType, parentId, itemType, object) {
+        this.get('ds').lazyOne(parentType, parentId, itemType, object, this.load, this);
+        return object;
+    },
+
     bulk: function() {
         return Syrah.Bulk.create({ store: this });
     },

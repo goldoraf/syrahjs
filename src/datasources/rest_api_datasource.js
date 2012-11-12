@@ -19,6 +19,14 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
         });
     },
 
+    lazyOne: function(parentType, parentId, itemType, object, callback, store) {
+        this.ajax(itemType, this.buildUrl(parentType) + '/' + parentId + '/' + Syrah.Inflector.getTypeName(itemType), 'GET', {
+            success: function(json) {
+                callback.call(store, object, json);
+            }
+        });
+    },
+
     find: function(type, collection, query, callback, store) {
         this.ajax(type, this.buildUrl(type), 'GET', {
             data: query,

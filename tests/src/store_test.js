@@ -38,9 +38,9 @@ test("Store has a load() method to load in attributes in an object", function() 
     equal(contact.get("isLoaded"), true, "isLoaded is true once the store loaded the object");
     equal(contact.get('phones').get("isLoaded"), false,
         "A HasMany association not included in the JSON has a isLoaded property set to false");
-  /*  equal(contact.get('addressbook').get("isLoaded"), false,
+    equal(contact.get('addressbook').get("isLoaded"), false,
         "A BelongsTo association not included in the JSON has a isLoaded property set to false");
-	*/
+
 	equal(contact.get('firstname'), 'John');
 	equal(contact.get('lastname'), 'Doe');
 });
@@ -87,7 +87,7 @@ test("Calling Store.findById() should invoke his datasource's findById() and ret
 	ok(returnedObject instanceof Foo.Contact, "Store.findById() returned an object");
 });
 
-asyncTest("Associations are fetched lazily if not provided", function() {
+asyncTest("Associations are fetched lazily if not provided", 1, function() {
     var ds = Syrah.IdentityDataSource.extend({
         lazyMany: function(parentType, parentId, itemType, collection, callback, store) {
             collection.pushObject(Foo.Phone.create({ number: "+87654321", type: "mobile" }));

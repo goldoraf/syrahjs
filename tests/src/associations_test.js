@@ -66,12 +66,15 @@ test("HasMany association usage", function() {
 test("BelongsTo association usage", function() {
     var blog = Foo.Blog.create({ title: 'Ember & JS' });
     var author = Foo.Author.create({ id: 5678, name: 'John Doe' });
-    equal(blog.get('author'), null);
+    equal(blog.get('author').get('isLoaded'), false);
 
     blog.set('author', author);
 
     equal(blog.getDbRef('author_id'), 5678, "An object should maintain a FK to the object it belongs to");
     equal(blog.get('author').get('name'), 'John Doe', "The object it belongs to can be retrieved");
+
+    var anonymousBlog = Foo.Blog.create({ title: 'Ember & JS', author: null });
+    equal(anonymousBlog.get('author'), null);
 });
 
 test("Bi-directional associations", function() {

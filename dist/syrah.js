@@ -451,6 +451,7 @@ Syrah.BelongsTo = Ember.Object.extend({
     target: null,
     owner: null,
     foreignKey: null,
+    isLoaded: false,
 
     replaceTarget: function(object) {
         this.set('target', object);
@@ -475,15 +476,16 @@ Syrah.BelongsTo = Ember.Object.extend({
 });
 
 Syrah.BelongsTo.reopenClass({
-    createInstance: function(options, owner) {
+    createInstance: function(options, owner, target) {
         var fk = options.foreignKey || null,
             inverseOf = options.inverseOf || null;
 
         return Syrah.BelongsTo.create({
             inverseOf: inverseOf,
-            target: null,
+            target: target,
             owner: owner,
-            foreignKey: fk
+            foreignKey: fk,
+            isLoaded: (target !== undefined)
         });
     },
 
@@ -493,6 +495,16 @@ Syrah.BelongsTo.reopenClass({
             if (arguments.length === 2) {
                 assoc.replaceTarget(value);
                 return value;
+            }
+            if (assoc.get('isLoaded') === false) {
+                var itemType = this.getPropertyDefinition(key).type,
+                    target;
+                itemType = (Ember.typeOf(itemType) === 'string') ? Ember.get(itemType) : itemType;
+                target = itemType.create();
+
+                itemType.getStore().lazyOne(this.constructor, this.get("id"), itemType, target);
+                assoc.set('target', target); // ou assoc.replaceTarget(target);????
+                return target;
             }
             return assoc.get('target');
         }).property();
@@ -518,9 +530,8 @@ Syrah.HasMany = Ember.ArrayProxy.extend({
         }
         var inverse = this.get('inverseOf');
         if (inverse !== null) {
-            var inverseAssoc = object.getAssociationObject(inverse);
+            var inverseAssoc = object.getAssociationObject(inverse, this.get("owner"));
             // TODO : ajouter un check
-            inverseAssoc.set('target', this.get('owner'));
         }
 
         this._super(object);
@@ -568,7 +579,7 @@ Syrah.HasMany.reopenClass({
             return result;
         }).property();
     }
-})
+});
 })();
 
 
@@ -886,6 +897,11 @@ Syrah.Store = Ember.Object.extend({
         return collection;
     },
 
+    lazyOne: function(parentType, parentId, itemType, object) {
+        this.get('ds').lazyOne(parentType, parentId, itemType, object, this.load, this);
+        return object;
+    },
+
     bulk: function() {
         return Syrah.Bulk.create({ store: this });
     },
@@ -1052,6 +1068,14 @@ Syrah.RESTApiDataSource = Syrah.DataSource.extend({
         this.ajax(itemType, this.buildUrl(parentType) + '/' + parentId + '/' + this.getCollectionName(itemType), 'GET', {
             success: function(json) {
                 callback.call(store, itemType, collection, json);
+            }
+        });
+    },
+
+    lazyOne: function(parentType, parentId, itemType, object, callback, store) {
+        this.ajax(itemType, this.buildUrl(parentType) + '/' + parentId + '/' + Syrah.Inflector.getTypeName(itemType), 'GET', {
+            success: function(json) {
+                callback.call(store, object, json);
             }
         });
     },

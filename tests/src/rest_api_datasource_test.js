@@ -81,6 +81,15 @@ test("Lazy loading of a child collection makes a GET to /contacts/[id]/phones", 
     expectMethod('GET');
 });
 
+test("Lazy loading of a child entity makes a GET to /contacts/[id]/adressbook", function() {
+    var store = Foo.store = Syrah.Store.create({ds:spiedDS});
+    var contact = Foo.Contact.create({id: '12345', firstname: 'John', lastname: 'Doe'});
+    contact.get('addressbook');
+
+    expectUrl('/contacts/12345/addressbook');
+    expectMethod('GET');
+});
+
 test("Adding an object makes a POST to /contacts", function() {
 	var store = Syrah.Store.create({ds:spiedDS});
 	store.add(Foo.Contact.create({ firstname: 'John', lastname: 'Doe' }));
